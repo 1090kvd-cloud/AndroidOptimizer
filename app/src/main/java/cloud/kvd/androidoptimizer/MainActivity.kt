@@ -56,6 +56,22 @@ class MainActivity:ComponentActivity(){
             Text("Профиль",style=MaterialTheme.typography.titleLarge)
             OptimizationProfile.entries.forEach{item->FilterChip(selected=profile==item,onClick={profile=item},label={Text(item.title)})}
             Text(profile.description)
+            OptimizationEngine.recommendations(profile).forEach { action ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(action.title, style = MaterialTheme.typography.titleMedium)
+                        Text(action.description)
+                        when (action.id) {
+                            "battery" -> OutlinedButton(onClick = { OptimizationEngine.openBatterySettings(context) }) { Text("Открыть настройки") }
+                            "background", "unused_apps" -> apps.firstOrNull { !it.isSystem }?.let { candidate ->
+                                OutlinedButton(onClick = { OptimizationEngine.openAppDetails(context, candidate.packageName) }) {
+                                    Text("Открыть " + candidate.label)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             HorizontalDivider()
             Text("Shizuku / ADB",style=MaterialTheme.typography.titleLarge)
