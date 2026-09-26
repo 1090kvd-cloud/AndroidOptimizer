@@ -221,4 +221,5 @@ class MainActivity:ComponentActivity(){
 @Composable private fun DiagnosticCard(title:String,value:String){Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(title,style=MaterialTheme.typography.labelLarge);Text(value,style=MaterialTheme.typography.bodyLarge)}}}
 
 private fun signed(value:Long):String = if(value>0) "+$value" else value.toString()
-\nprivate fun cleanDeviceName(manufacturer:String,model:String):String{val m=manufacturer.trim();val d=model.trim();return if(d.startsWith(m,ignoreCase=true)) d else "$m $d"}\n
+
+private fun cleanDeviceName(manufacturer:String,model:String):String{val m=manufacturer.trim();val d=model.trim();return if(d.startsWith(m,ignoreCase=true)) d else "$m $d"}
