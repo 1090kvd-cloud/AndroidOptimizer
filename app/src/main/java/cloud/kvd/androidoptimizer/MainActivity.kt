@@ -115,7 +115,19 @@ class MainActivity:ComponentActivity(){
                 if(apps.isEmpty()) Text("Нет данных за последние 7 дней.")
                 apps.take(10).forEach{app->
                     val minutes=TimeUnit.MILLISECONDS.toMinutes(app.foregroundMs)
-                    DiagnosticCard(app.label,minutes.toString()+" мин · "+if(app.isSystem)"системное" else "пользовательское")
+                    val eligibility=SafeAppActions.evaluate(context,app.packageName)
+                    Card(Modifier.fillMaxWidth()){
+                        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
+                            Text(app.label,style=MaterialTheme.typography.labelLarge)
+                            Text(minutes.toString()+" мин · "+eligibility.reason)
+                            if(eligibility.allowed){
+                                OutlinedButton(onClick={
+                                    OptimizationEngine.openAppDetails(context,app.packageName)
+                                    ChangeJournal.add(context,"Открыты настройки: "+app.packageName)
+                                }){Text("Настройки приложения")}
+                            }
+                        }
+                    }
                 }
             }
             Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku()},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
