@@ -31,6 +31,7 @@ class MainActivity:ComponentActivity(){
     var shizukuState by remember{mutableStateOf(ShizukuAccess.state())}
     var beforeSnapshot by remember { mutableStateOf<OptimizationSnapshot?>(null) }
     var comparison by remember { mutableStateOf<SnapshotComparison?>(null) }
+    var journal by remember { mutableStateOf(ChangeJournal.read(context)) }
     val refreshShizuku={shizukuState=ShizukuAccess.state()}
     DisposableEffect(Unit){
         val received=Shizuku.OnBinderReceivedListener{refreshShizuku()}
@@ -124,13 +125,35 @@ class MainActivity:ComponentActivity(){
                                 OutlinedButton(onClick={
                                     OptimizationEngine.openAppDetails(context,app.packageName)
                                     ChangeJournal.add(context,"Открыты настройки: "+app.packageName)
+                                    journal=ChangeJournal.read(context)
                                 }){Text("Настройки приложения")}
                             }
                         }
                     }
                 }
             }
-            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku()},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
+            HorizontalDivider()
+            Text("Журнал",style=MaterialTheme.typography.titleLarge)
+            if(journal.isEmpty()) Text("Изменений и действий пока нет.")
+            journal.take(10).forEach { record ->
+                Card(Modifier.fillMaxWidth()){
+                    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+                        Text(record.description)
+                        Text(if(record.type==ChangeType.REVERSIBLE_CHANGE)"Можно откатить" else "Информационная запись",style=MaterialTheme.typography.labelMedium)
+                        if(record.type==ChangeType.REVERSIBLE_CHANGE){
+                            OutlinedButton(onClick={
+                                val result=RollbackManager.rollback(context,record)
+                                if(result.success){ChangeJournal.remove(context,record.id);journal=ChangeJournal.read(context)}
+                            }){Text("Откатить")}
+                        }
+                    }
+                }
+            }
+            if(journal.isNotEmpty()){
+                TextButton(onClick={ChangeJournal.clear(context);journal=emptyList()}){Text("Очистить журнал")}
+            }
+
+            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku();journal=ChangeJournal.read(context)},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
             Text("Расширенный доступ включается только после явного разрешения Shizuku. Автоматические системные изменения пока не выполняются.")
         }
     }
