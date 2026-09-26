@@ -14,9 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import java.util.concurrent.TimeUnit
+import rikka.shizuku.Shizuku
 
 class MainActivity:ComponentActivity(){
-    override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{OptimizerScreen()}}}
+    override fun onCreate(savedInstanceState:Bundle?){
+        super.onCreate(savedInstanceState)
+        setContent{MaterialTheme{OptimizerScreen()}}
+    }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun OptimizerScreen(){
@@ -24,6 +28,21 @@ class MainActivity:ComponentActivity(){
     var snapshot by remember{mutableStateOf(DeviceDiagnostics.read(context))}
     var profile by remember{mutableStateOf(OptimizationProfile.DAILY)}
     var apps by remember{mutableStateOf(AppAnalyzer.recentApps(context))}
+    var shizukuState by remember{mutableStateOf(ShizukuAccess.state())}
+    val refreshShizuku={shizukuState=ShizukuAccess.state()}
+    DisposableEffect(Unit){
+        val received=Shizuku.OnBinderReceivedListener{refreshShizuku()}
+        val dead=Shizuku.OnBinderDeadListener{refreshShizuku()}
+        val permission=Shizuku.OnRequestPermissionResultListener{requestCode,_->if(requestCode==ShizukuAccess.REQUEST_CODE)refreshShizuku()}
+        Shizuku.addBinderReceivedListener(received)
+        Shizuku.addBinderDeadListener(dead)
+        Shizuku.addRequestPermissionResultListener(permission)
+        onDispose{
+            Shizuku.removeBinderReceivedListener(received)
+            Shizuku.removeBinderDeadListener(dead)
+            Shizuku.removeRequestPermissionResultListener(permission)
+        }
+    }
     val usageGranted=AppAnalyzer.hasUsageAccess(context)
     Scaffold(topBar={TopAppBar(title={Text("AndroidOptimizer")})}){padding->
         Column(Modifier.padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
@@ -33,9 +52,20 @@ class MainActivity:ComponentActivity(){
             DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ свободно / "+snapshot.totalRamMb+" МБ")
             DiagnosticCard("Хранилище",snapshot.freeStorageGb.toString()+" ГБ свободно / "+snapshot.totalStorageGb+" ГБ")
             DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")
+
             Text("Профиль",style=MaterialTheme.typography.titleLarge)
             OptimizationProfile.entries.forEach{item->FilterChip(selected=profile==item,onClick={profile=item},label={Text(item.title)})}
             Text(profile.description)
+
+            HorizontalDivider()
+            Text("Shizuku / ADB",style=MaterialTheme.typography.titleLarge)
+            when(shizukuState){
+                ShizukuState.UNAVAILABLE->Text("Shizuku не запущен или недоступен. Запусти Shizuku на устройстве и вернись в приложение.")
+                ShizukuState.RUNNING_PERMISSION_NEEDED->Button(onClick={ShizukuAccess.requestPermission()}){Text("Разрешить доступ через Shizuku")}
+                ShizukuState.READY->DiagnosticCard("Shizuku готов","UID сервера: "+(ShizukuAccess.serverUid()?.toString()?:"не определён"))
+            }
+            OutlinedButton(onClick=refreshShizuku,modifier=Modifier.fillMaxWidth()){Text("Проверить Shizuku")}
+
             HorizontalDivider()
             Text("Активность приложений",style=MaterialTheme.typography.titleLarge)
             if(!usageGranted){
@@ -48,8 +78,8 @@ class MainActivity:ComponentActivity(){
                     DiagnosticCard(app.label,minutes.toString()+" мин · "+if(app.isSystem)"системное" else "пользовательское")
                 }
             }
-            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context)},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
-            Text("No-root режим только анализирует и предлагает безопасные действия. Shizuku/ADB и Root будут отдельными уровнями с проверкой и откатом.")
+            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku()},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
+            Text("Расширенный доступ включается только после явного разрешения Shizuku. Автоматические системные изменения пока не выполняются.")
         }
     }
 }
