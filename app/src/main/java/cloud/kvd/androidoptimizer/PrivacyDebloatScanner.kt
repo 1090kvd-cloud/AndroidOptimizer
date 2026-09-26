@@ -34,13 +34,16 @@ object PrivacyDebloatScanner {
             .map { info ->
                 val pkg=info.packageName.lowercase()
                 val label=pm.getApplicationLabel(info).toString()
-                val protected=protectedPrefixes.any { pkg==it || pkg.startsWith(it+".") }
+                val known=OemDebloatDatabase.find(info.packageName)
+                val protected=protectedPrefixes.any { pkg==it || pkg.startsWith(it+".") } || known?.risk==OemRisk.PROTECTED
                 val requested=runCatching {
                     pm.getPackageInfo(info.packageName,PackageManager.GET_PERMISSIONS).requestedPermissions?.toList().orEmpty()
                 }.getOrDefault(emptyList())
                 val reasons=mutableListOf<String>()
                 val category=when {
-                    protected -> { reasons += "Критический или инфраструктурный пакет"; DebloatCategory.PROTECTED }
+                    protected -> { reasons += (known?.note ?: "Критический или инфраструктурный пакет"); DebloatCategory.PROTECTED }
+                    known?.risk==OemRisk.CAUTION -> { reasons += known.note; DebloatCategory.OPTIONAL_SYSTEM_APP }
+                    known?.risk==OemRisk.RECOMMENDED_REVIEW -> { reasons += known.note; DebloatCategory.TELEMETRY_CANDIDATE }
                     telemetryHints.any(pkg::contains) -> { reasons += "Имя пакета содержит признак аналитики/диагностики"; DebloatCategory.TELEMETRY_CANDIDATE }
                     advertisingHints.any(pkg::contains) -> { reasons += "Имя пакета содержит признак рекламы/рекомендаций"; DebloatCategory.ADVERTISING_CANDIDATE }
                     else -> { reasons += "Предустановленное системное приложение"; DebloatCategory.OPTIONAL_SYSTEM_APP }
