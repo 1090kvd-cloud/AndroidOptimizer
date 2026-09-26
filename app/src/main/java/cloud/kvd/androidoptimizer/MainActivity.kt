@@ -218,6 +218,7 @@ class MainActivity:ComponentActivity(){
         }
     }
 }
+}
 @Composable private fun DiagnosticCard(title:String,value:String){Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(title,style=MaterialTheme.typography.labelLarge);Text(value,style=MaterialTheme.typography.bodyLarge)}}}
 
 private fun signed(value:Long):String = if(value>0) "+$value" else value.toString()
