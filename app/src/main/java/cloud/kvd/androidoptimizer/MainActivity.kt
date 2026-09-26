@@ -147,11 +147,23 @@ class MainActivity:ComponentActivity(){
                             Text(finding.label,style=MaterialTheme.typography.titleMedium)
                             Text(finding.packageName)
                             Text(finding.reasons.joinToString(" · "))
-                            OutlinedButton(onClick={
-                                OptimizationEngine.openAppDetails(context,finding.packageName)
-                                ChangeJournal.add(context,"Проверка системного пакета: "+finding.packageName)
-                                journal=ChangeJournal.read(context)
-                            }){Text("Проверить настройки")}
+                            val plan=PackageStateController.plan(context,finding)
+                            Text(plan.reason,style=MaterialTheme.typography.labelMedium)
+                            if(plan.canOfferDisable){
+                                Button(onClick={
+                                    ChangeJournal.add(context,"Перед отключением: "+finding.packageName)
+                                    journal=ChangeJournal.read(context)
+                                    PackageStateController.openSystemAppPage(context,finding.packageName)
+                                }){Text("Отключить в Android")}
+                            } else if(plan.canOfferRestore){
+                                OutlinedButton(onClick={
+                                    ChangeJournal.add(context,"Перед восстановлением: "+finding.packageName)
+                                    journal=ChangeJournal.read(context)
+                                    PackageStateController.openSystemAppPage(context,finding.packageName)
+                                }){Text("Восстановить в Android")}
+                            } else {
+                                OutlinedButton(onClick={PackageStateController.openSystemAppPage(context,finding.packageName)}){Text("Проверить настройки")}
+                            }
                         }
                     }
                 }
