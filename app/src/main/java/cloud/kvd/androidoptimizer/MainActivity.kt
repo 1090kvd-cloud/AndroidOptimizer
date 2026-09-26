@@ -29,6 +29,8 @@ class MainActivity:ComponentActivity(){
     var profile by remember{mutableStateOf(OptimizationProfile.DAILY)}
     var apps by remember{mutableStateOf(AppAnalyzer.recentApps(context))}
     var shizukuState by remember{mutableStateOf(ShizukuAccess.state())}
+    var beforeSnapshot by remember { mutableStateOf<OptimizationSnapshot?>(null) }
+    var comparison by remember { mutableStateOf<SnapshotComparison?>(null) }
     val refreshShizuku={shizukuState=ShizukuAccess.state()}
     DisposableEffect(Unit){
         val received=Shizuku.OnBinderReceivedListener{refreshShizuku()}
@@ -74,6 +76,28 @@ class MainActivity:ComponentActivity(){
             }
 
             HorizontalDivider()
+            Text("До / После", style = MaterialTheme.typography.titleLarge)
+            Button(
+                onClick = { beforeSnapshot = SnapshotTracker.capture(context); comparison = null },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Снять показатель ДО") }
+            OutlinedButton(
+                onClick = {
+                    beforeSnapshot?.let { before ->
+                        comparison = SnapshotTracker.compare(before, SnapshotTracker.capture(context))
+                    }
+                },
+                enabled = beforeSnapshot != null,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("Снять показатель ПОСЛЕ") }
+            comparison?.let { result ->
+                DiagnosticCard("Свободная ОЗУ", signed(result.ramDeltaMb) + " МБ")
+                DiagnosticCard("Свободное хранилище", signed(result.storageDeltaGb) + " ГБ")
+                DiagnosticCard("Заряд между замерами", signed(result.batteryDeltaPercent.toLong()) + "%")
+                Text("Показатели описывают изменение между двумя замерами и не доказывают ускорение устройства сами по себе.")
+            }
+
+            HorizontalDivider()
             Text("Shizuku / ADB",style=MaterialTheme.typography.titleLarge)
             when(shizukuState){
                 ShizukuState.UNAVAILABLE->Text("Shizuku не запущен или недоступен. Запусти Shizuku на устройстве и вернись в приложение.")
@@ -100,3 +124,5 @@ class MainActivity:ComponentActivity(){
     }
 }
 @Composable private fun DiagnosticCard(title:String,value:String){Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(title,style=MaterialTheme.typography.labelLarge);Text(value,style=MaterialTheme.typography.bodyLarge)}}}
+
+private fun signed(value:Long):String = if(value>0) "+$value" else value.toString()
