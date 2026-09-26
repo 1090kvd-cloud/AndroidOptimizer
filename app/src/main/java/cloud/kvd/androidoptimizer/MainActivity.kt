@@ -32,6 +32,8 @@ class MainActivity:ComponentActivity(){
     var beforeSnapshot by remember { mutableStateOf<OptimizationSnapshot?>(null) }
     var comparison by remember { mutableStateOf<SnapshotComparison?>(null) }
     var journal by remember { mutableStateOf(ChangeJournal.read(context)) }
+    var debloatFindings by remember { mutableStateOf<List<SystemAppFinding>>(emptyList()) }
+    var showDebloat by remember { mutableStateOf(false) }
     val refreshShizuku={shizukuState=ShizukuAccess.state()}
     DisposableEffect(Unit){
         val received=Shizuku.OnBinderReceivedListener{refreshShizuku()}
@@ -132,6 +134,31 @@ class MainActivity:ComponentActivity(){
                     }
                 }
             }
+            HorizontalDivider()
+            Text("Privacy & Debloat",style=MaterialTheme.typography.titleLarge)
+            Text("Сканер ищет кандидатов для проверки. Он не объявляет приложение шпионским только по имени пакета или разрешениям.")
+            Button(onClick={debloatFindings=PrivacyDebloatScanner.scan(context);showDebloat=true},modifier=Modifier.fillMaxWidth()){Text("Сканировать системные приложения")}
+            if(showDebloat){
+                val review=debloatFindings.filter{it.recommendation==DebloatRecommendation.REVIEW}
+                Text("Кандидатов для ручной проверки: "+review.size)
+                review.take(20).forEach{finding->
+                    Card(Modifier.fillMaxWidth()){
+                        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+                            Text(finding.label,style=MaterialTheme.typography.titleMedium)
+                            Text(finding.packageName)
+                            Text(finding.reasons.joinToString(" · "))
+                            OutlinedButton(onClick={
+                                OptimizationEngine.openAppDetails(context,finding.packageName)
+                                ChangeJournal.add(context,"Проверка системного пакета: "+finding.packageName)
+                                journal=ChangeJournal.read(context)
+                            }){Text("Проверить настройки")}
+                        }
+                    }
+                }
+                val protectedCount=debloatFindings.count{it.category==DebloatCategory.PROTECTED}
+                Text("Защищённых системных пакетов: "+protectedCount)
+            }
+
             HorizontalDivider()
             Text("Журнал",style=MaterialTheme.typography.titleLarge)
             if(journal.isEmpty()) Text("Изменений и действий пока нет.")
