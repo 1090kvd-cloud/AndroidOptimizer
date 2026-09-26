@@ -50,15 +50,22 @@ class MainActivity:ComponentActivity(){
     }
     val usageGranted=AppAnalyzer.hasUsageAccess(context)
     var section by remember{mutableStateOf(0)}
+    LaunchedEffect(section){
+        if(section==1) apps=AppAnalyzer.recentApps(context)
+        if(section==2){debloatFindings=PrivacyDebloatScanner.scan(context);showDebloat=true}
+    }
     Scaffold(topBar={TopAppBar(title={Text("AndroidOptimizer")})},bottomBar={NavigationBar{listOf("Главная","Приложения","Privacy","Ещё").forEachIndexed{i,label->NavigationBarItem(selected=section==i,onClick={section=i},icon={Text(listOf("⌂","▦","◈","•••")[i])},label={Text(label)})}}}){padding->
-        Column(Modifier.padding(padding).padding(20.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        Column(Modifier.padding(padding).padding(horizontal=18.dp,vertical=12.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
             if(section==0){
-            Text("Состояние устройства",style=MaterialTheme.typography.headlineSmall)
+            Text("Оптимизация",style=MaterialTheme.typography.headlineMedium)
+            Text("Состояние устройства",style=MaterialTheme.typography.titleMedium)
             DiagnosticCard("Устройство",cleanDeviceName(snapshot.manufacturer,snapshot.model))
-            DiagnosticCard("Android",snapshot.androidVersion)
-            DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ свободно / "+snapshot.totalRamMb+" МБ")
-            DiagnosticCard("Хранилище",snapshot.freeStorageGb.toString()+" ГБ свободно / "+snapshot.totalStorageGb+" ГБ")
-            DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                Box(Modifier.weight(1f)){DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ")}
+                Box(Modifier.weight(1f)){DiagnosticCard("Память",snapshot.freeStorageGb.toString()+" ГБ")}
+                Box(Modifier.weight(1f)){DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")}
+            }
+            Text("Android "+snapshot.androidVersion,style=MaterialTheme.typography.bodySmall)
 
             Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku();journal=ChangeJournal.read(context)},modifier=Modifier.fillMaxWidth()){Text("Анализировать устройство")}
             Text("Профиль",style=MaterialTheme.typography.titleLarge)
@@ -115,11 +122,11 @@ class MainActivity:ComponentActivity(){
             HorizontalDivider()
             Text("Активность приложений",style=MaterialTheme.typography.titleLarge)
             if(!usageGranted){
-                Text("Для анализа активности нужен системный доступ к статистике использования.")
+                Text("Приложения найдены. Usage Access нужен только для сортировки по активности и времени использования.")
                 Button(onClick={context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))},modifier=Modifier.fillMaxWidth()){Text("Выдать Usage Access")}
-            }else{
-                if(apps.isEmpty()) Text("Нет данных за последние 7 дней.")
-                apps.take(10).forEach{app->
+            }
+            if(apps.isEmpty()) Text("Приложения не найдены.")
+            apps.take(40).forEach{app->
                     val minutes=TimeUnit.MILLISECONDS.toMinutes(app.foregroundMs)
                     val eligibility=SafeAppActions.evaluate(context,app.packageName)
                     Card(Modifier.fillMaxWidth()){
@@ -136,7 +143,6 @@ class MainActivity:ComponentActivity(){
                         }
                     }
                 }
-            }
             HorizontalDivider()
             Text("Privacy & Debloat",style=MaterialTheme.typography.titleLarge)
             Text("Сканер ищет кандидатов для проверки. Он не объявляет приложение шпионским только по имени пакета или разрешениям.")
