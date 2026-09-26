@@ -175,6 +175,24 @@ class MainActivity:ComponentActivity(){
             }
 
             HorizontalDivider()
+            Text("Настройка Shizuku",style=MaterialTheme.typography.titleLarge)
+            DiagnosticCard("Расширенный режим",when(shizukuState){
+                ShizukuState.READY->"Активен"
+                ShizukuState.RUNNING_PERMISSION_NEEDED->"Shizuku запущен — требуется разрешение"
+                ShizukuState.UNAVAILABLE->"Не подключён — базовые функции продолжают работать"
+            })
+            if(shizukuState==ShizukuState.UNAVAILABLE){
+                Text("1. Установи Shizuku.\n2. Включи «Для разработчиков» и «Беспроводная отладка».\n3. Запусти Shizuku через сопряжение.\n4. Вернись сюда и проверь подключение.")
+                Button(onClick={runCatching{context.startActivity(Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://shizuku.rikka.app/download/"))) }},modifier=Modifier.fillMaxWidth()){Text("Установить Shizuku")}
+                OutlinedButton(onClick={runCatching{context.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))}},modifier=Modifier.fillMaxWidth()){Text("Параметры разработчика")}
+            }
+            if(shizukuState==ShizukuState.RUNNING_PERMISSION_NEEDED){
+                Button(onClick={ShizukuAccess.requestPermission()},modifier=Modifier.fillMaxWidth()){Text("Разрешить AndroidOptimizer")}
+            }
+            OutlinedButton(onClick=refreshShizuku,modifier=Modifier.fillMaxWidth()){Text("Проверить подключение")}
+            Text("Shizuku даёт расширенный доступ к системным API через права ADB/root. Сам AndroidOptimizer root не получает.",style=MaterialTheme.typography.bodySmall)
+
+            HorizontalDivider()
             Text("Журнал",style=MaterialTheme.typography.titleLarge)
             if(journal.isEmpty()) Text("Изменений и действий пока нет.")
             journal.take(10).forEach { record ->
