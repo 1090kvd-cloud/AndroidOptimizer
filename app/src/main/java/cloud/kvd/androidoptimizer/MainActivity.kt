@@ -49,15 +49,18 @@ class MainActivity:ComponentActivity(){
         }
     }
     val usageGranted=AppAnalyzer.hasUsageAccess(context)
-    Scaffold(topBar={TopAppBar(title={Text("AndroidOptimizer")})}){padding->
-        Column(Modifier.padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
+    var section by remember{mutableStateOf(0)}
+    Scaffold(topBar={TopAppBar(title={Text("AndroidOptimizer")})},bottomBar={NavigationBar{listOf("Главная","Приложения","Privacy","Ещё").forEachIndexed{i,label->NavigationBarItem(selected=section==i,onClick={section=i},icon={Text(listOf("⌂","▦","◈","•••")[i])},label={Text(label)})}}}){padding->
+        Column(Modifier.padding(padding).padding(20.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            if(section==0){
             Text("Состояние устройства",style=MaterialTheme.typography.headlineSmall)
-            DiagnosticCard("Устройство",snapshot.manufacturer+" "+snapshot.model)
+            DiagnosticCard("Устройство",cleanDeviceName(snapshot.manufacturer,snapshot.model))
             DiagnosticCard("Android",snapshot.androidVersion)
             DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ свободно / "+snapshot.totalRamMb+" МБ")
             DiagnosticCard("Хранилище",snapshot.freeStorageGb.toString()+" ГБ свободно / "+snapshot.totalStorageGb+" ГБ")
             DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")
 
+            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku();journal=ChangeJournal.read(context)},modifier=Modifier.fillMaxWidth()){Text("Анализировать устройство")}
             Text("Профиль",style=MaterialTheme.typography.titleLarge)
             OptimizationProfile.entries.forEach{item->FilterChip(selected=profile==item,onClick={profile=item},label={Text(item.title)})}
             Text(profile.description)
@@ -200,3 +203,4 @@ class MainActivity:ComponentActivity(){
 @Composable private fun DiagnosticCard(title:String,value:String){Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(title,style=MaterialTheme.typography.labelLarge);Text(value,style=MaterialTheme.typography.bodyLarge)}}}
 
 private fun signed(value:Long):String = if(value>0) "+$value" else value.toString()
+\nprivate fun cleanDeviceName(manufacturer:String,model:String):String{val m=manufacturer.trim();val d=model.trim();return if(d.startsWith(m,ignoreCase=true)) d else "$m $d"}\n
