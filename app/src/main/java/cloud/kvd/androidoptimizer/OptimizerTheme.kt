@@ -17,7 +17,8 @@ fun OptimizerTheme(content: @Composable () -> Unit) {
         primary = OptimizerBlue, secondary = OptimizerTeal,
         background = Color(0xFFF3F6FC), surface = Color.White, surfaceVariant = Color(0xFFE9EFF9),
         onSurface = Color(0xFF18243C), onSurfaceVariant = Color(0xFF63718B),
-        primaryContainer = Color(0xFFDFE9FF), onPrimaryContainer = Color(0xFF163674)
+        primaryContainer = Color(0xFFDFE9FF), onPrimaryContainer = Color(0xFF163674),
+        secondaryContainer = Color(0xFFDFE9FF), onSecondaryContainer = Color(0xFF245DDC)
     )
     MaterialTheme(colorScheme = colors, content = content)
 }

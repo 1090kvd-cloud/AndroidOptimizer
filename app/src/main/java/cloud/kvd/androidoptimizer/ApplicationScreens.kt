@@ -152,7 +152,7 @@ fun ScreenHeader(title: String, subtitle: String, loading: Boolean, onRefresh: (
 @Composable
 private fun SearchField(query: String, onChange: (String) -> Unit) {
     OutlinedTextField(value = query, onValueChange = onChange, modifier = Modifier.fillMaxWidth(), singleLine = true,
-        shape = RoundedCornerShape(16.dp), label = { Text("Поиск по названию или пакету") },
+        shape = RoundedCornerShape(16.dp), label = { Text("Название или пакет") },
         leadingIcon = { Icon(Icons.Outlined.Search, null) },
         trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Outlined.Close, "Очистить поиск") } })
 }
@@ -177,8 +177,9 @@ fun EmptyResult(message: String, onRetry: (() -> Unit)? = null) {
 @Composable
 private fun AppIcon(packageName: String, label: String) {
     val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(null, packageName) {
-        value = withContext(Dispatchers.IO) {
+    var bitmap by remember(packageName) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(packageName) {
+        bitmap = withContext(Dispatchers.IO) {
             runCatching { context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap() }.getOrNull()
         }
     }

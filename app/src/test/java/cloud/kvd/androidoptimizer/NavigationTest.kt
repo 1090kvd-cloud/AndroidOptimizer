@@ -3,6 +3,10 @@ package cloud.kvd.androidoptimizer
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import android.graphics.Canvas
+import android.app.AppOpsManager
+import android.os.Process
+import org.robolectric.Shadows
+import org.junit.Assert.assertFalse
 import android.graphics.Bitmap
 import java.io.File
 import org.robolectric.annotation.GraphicsMode
@@ -20,7 +24,7 @@ class NavigationTest {
 
     @Test fun appsTabShowsSearchInsteadOfBlankPage() {
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
-        compose.onNodeWithText("Поиск по названию или пакету").assertIsDisplayed()
+        compose.onNodeWithText("Название или пакет").assertIsDisplayed()
     }
 
     @Test fun privacyTabShowsScannerInsteadOfBlankPage() {
@@ -34,17 +38,32 @@ class NavigationTest {
     }
 
     @Test fun searchFindsInstalledAppWithoutUsagePermission() {
+        compose.waitUntil(30_000) {
+            compose.onAllNodesWithText("Проверить устройство").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.runOnIdle {
+            val activity = compose.activity
+            Shadows.shadowOf(activity.getSystemService(AppOpsManager::class.java)).setMode(
+                AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), activity.packageName, AppOpsManager.MODE_IGNORED
+            )
+            assertFalse(AppAnalyzer.hasUsageAccess(activity))
+        }
+        compose.onNodeWithText("Проверить устройство").performClick()
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
-        compose.onNodeWithText("Поиск по названию или пакету").performTextInput("cloud.kvd.androidoptimizer")
+        compose.waitUntil(30_000) {
+            compose.onAllNodesWithText("Разрешить статистику использования").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("Название или пакет").performTextInput("cloud.kvd.androidoptimizer")
         compose.waitUntil(30_000) {
             compose.onAllNodes(hasText("cloud.kvd.androidoptimizer") and !hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNode(hasText("cloud.kvd.androidoptimizer") and !hasSetTextAction()).assertIsDisplayed()
+        compose.onNodeWithText("Разрешить статистику использования").assertIsDisplayed()
     }
 
     @Test fun unmatchedSearchHasAnExplicitEmptyState() {
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
-        compose.onNodeWithText("Поиск по названию или пакету").performTextInput("__nonexistent_package__")
+        compose.onNodeWithText("Название или пакет").performTextInput("__nonexistent_package__")
         compose.waitUntil(30_000) {
             compose.onAllNodesWithText("Ничего не найдено. Измените поиск или фильтр.").fetchSemanticsNodes().isNotEmpty()
         }
@@ -57,7 +76,7 @@ class NavigationTest {
         }
         capture("home")
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
-        compose.onNodeWithText("Поиск по названию или пакету").assertIsDisplayed()
+        compose.onNodeWithText("Название или пакет").assertIsDisplayed()
         capture("apps")
         compose.onNodeWithText("Privacy").performClick()
         compose.onNodeWithText("Проверка конфиденциальности").assertIsDisplayed()
