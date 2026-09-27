@@ -50,157 +50,87 @@ class MainActivity:ComponentActivity(){
     }
     val usageGranted=AppAnalyzer.hasUsageAccess(context)
     var section by remember{mutableStateOf(0)}
-    Scaffold(topBar={TopAppBar(title={Text("AndroidOptimizer")})},bottomBar={NavigationBar{listOf("Главная","Приложения","Privacy","Ещё").forEachIndexed{i,label->NavigationBarItem(selected=section==i,onClick={section=i},icon={Text(listOf("⌂","▦","◈","•••")[i])},label={Text(label)})}}}){padding->
-        Column(Modifier.padding(padding).padding(20.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            if(section==0){
-            Text("Состояние устройства",style=MaterialTheme.typography.headlineSmall)
-            DiagnosticCard("Устройство",cleanDeviceName(snapshot.manufacturer,snapshot.model))
-            DiagnosticCard("Android",snapshot.androidVersion)
-            DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ свободно / "+snapshot.totalRamMb+" МБ")
-            DiagnosticCard("Хранилище",snapshot.freeStorageGb.toString()+" ГБ свободно / "+snapshot.totalStorageGb+" ГБ")
-            DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")
-
-            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku();journal=ChangeJournal.read(context)},modifier=Modifier.fillMaxWidth()){Text("Анализировать устройство")}
-            Text("Профиль",style=MaterialTheme.typography.titleLarge)
-            OptimizationProfile.entries.forEach{item->FilterChip(selected=profile==item,onClick={profile=item},label={Text(item.title)})}
-            Text(profile.description)
-            OptimizationEngine.recommendations(profile).forEach { action ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(action.title, style = MaterialTheme.typography.titleMedium)
-                        Text(action.description)
-                        when (action.id) {
-                            "battery" -> OutlinedButton(onClick = { OptimizationEngine.openBatterySettings(context) }) { Text("Открыть настройки") }
-                            "background", "unused_apps" -> apps.firstOrNull { !it.isSystem }?.let { candidate ->
-                                OutlinedButton(onClick = { OptimizationEngine.openAppDetails(context, candidate.packageName) }) {
-                                    Text("Открыть " + candidate.label)
-                                }
-                            }
-                        }
+    LaunchedEffect(section){
+        if(section==1) apps=AppAnalyzer.recentApps(context)
+        if(section==2){debloatFindings=PrivacyDebloatScanner.scan(context);showDebloat=true}
+    }
+    Scaffold(
+        topBar={TopAppBar(title={Text("AndroidOptimizer")})},
+        bottomBar={NavigationBar{
+            listOf("Главная","Приложения","Privacy","Ещё").forEachIndexed{i,label->
+                NavigationBarItem(selected=section==i,onClick={section=i},icon={Text(listOf("⌂","▦","◈","•••")[i])},label={Text(label)})
+            }
+        }}
+    ){padding->
+        Column(Modifier.padding(padding).padding(horizontal=18.dp,vertical=12.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
+            when(section){
+                0 -> {
+                    Text("Оптимизация",style=MaterialTheme.typography.headlineMedium)
+                    DiagnosticCard("Устройство",cleanDeviceName(snapshot.manufacturer,snapshot.model))
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                        Box(Modifier.weight(1f)){DiagnosticCard("ОЗУ",snapshot.availableRamMb.toString()+" МБ")}
+                        Box(Modifier.weight(1f)){DiagnosticCard("Память",snapshot.freeStorageGb.toString()+" ГБ")}
+                        Box(Modifier.weight(1f)){DiagnosticCard("Батарея",snapshot.batteryPercent.toString()+"%")}
+                    }
+                    Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context)},modifier=Modifier.fillMaxWidth()){Text("ПРОВЕРИТЬ УСТРОЙСТВО")}
+                    Text("Быстрые действия",style=MaterialTheme.typography.titleLarge)
+                    ElevatedCard(onClick={section=1},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(18.dp)){Text("Приложения",style=MaterialTheme.typography.titleMedium);Text("Найти тяжёлые и редко используемые приложения")}}
+                    ElevatedCard(onClick={section=2},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(18.dp)){Text("Privacy & Debloat",style=MaterialTheme.typography.titleMedium);Text("Проверить предустановленные системные приложения")}}
+                    ElevatedCard(onClick={section=3},modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(18.dp)){Text("Shizuku",style=MaterialTheme.typography.titleMedium);Text(if(shizukuState==ShizukuState.READY)"Расширенный режим активен" else "Настроить расширенный доступ")}}
+                }
+                1 -> {
+                    Text("Приложения",style=MaterialTheme.typography.headlineMedium)
+                    if(!usageGranted){
+                        Text("Список приложений работает без дополнительных разрешений. Usage Access добавляет статистику использования.")
+                        OutlinedButton(onClick={context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))},modifier=Modifier.fillMaxWidth()){Text("Включить статистику использования")}
+                    }
+                    Text("Найдено: "+apps.size,style=MaterialTheme.typography.labelLarge)
+                    apps.take(60).forEach{app->
+                        Card(Modifier.fillMaxWidth()){Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+                            Text(app.label,style=MaterialTheme.typography.titleMedium)
+                            Text(app.packageName,style=MaterialTheme.typography.bodySmall)
+                            if(app.foregroundMs>0) Text(TimeUnit.MILLISECONDS.toMinutes(app.foregroundMs).toString()+" мин использования",style=MaterialTheme.typography.labelMedium)
+                            OutlinedButton(onClick={OptimizationEngine.openAppDetails(context,app.packageName)}){Text("Настройки")}
+                        }}
                     }
                 }
-            }
-
-            HorizontalDivider()
-            Text("До / После", style = MaterialTheme.typography.titleLarge)
-            Button(
-                onClick = { beforeSnapshot = SnapshotTracker.capture(context); comparison = null },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Снять показатель ДО") }
-            OutlinedButton(
-                onClick = {
-                    beforeSnapshot?.let { before ->
-                        comparison = SnapshotTracker.compare(before, SnapshotTracker.capture(context))
-                    }
-                },
-                enabled = beforeSnapshot != null,
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("Снять показатель ПОСЛЕ") }
-            comparison?.let { result ->
-                DiagnosticCard("Свободная ОЗУ", signed(result.ramDeltaMb) + " МБ")
-                DiagnosticCard("Свободное хранилище", signed(result.storageDeltaGb) + " ГБ")
-                DiagnosticCard("Заряд между замерами", signed(result.batteryDeltaPercent.toLong()) + "%")
-                Text("Показатели описывают изменение между двумя замерами и не доказывают ускорение устройства сами по себе.")
-            }
-
-            HorizontalDivider()
-            Text("Shizuku / ADB",style=MaterialTheme.typography.titleLarge)
-            when(shizukuState){
-                ShizukuState.UNAVAILABLE->Text("Shizuku не запущен или недоступен. Запусти Shizuku на устройстве и вернись в приложение.")
-                ShizukuState.RUNNING_PERMISSION_NEEDED->Button(onClick={ShizukuAccess.requestPermission()}){Text("Разрешить доступ через Shizuku")}
-                ShizukuState.READY->DiagnosticCard("Shizuku готов","UID сервера: "+(ShizukuAccess.serverUid()?.toString()?:"не определён"))
-            }
-            OutlinedButton(onClick=refreshShizuku,modifier=Modifier.fillMaxWidth()){Text("Проверить Shizuku")}
-
-            HorizontalDivider()
-            Text("Активность приложений",style=MaterialTheme.typography.titleLarge)
-            if(!usageGranted){
-                Text("Для анализа активности нужен системный доступ к статистике использования.")
-                Button(onClick={context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))},modifier=Modifier.fillMaxWidth()){Text("Выдать Usage Access")}
-            }else{
-                if(apps.isEmpty()) Text("Нет данных за последние 7 дней.")
-                apps.take(10).forEach{app->
-                    val minutes=TimeUnit.MILLISECONDS.toMinutes(app.foregroundMs)
-                    val eligibility=SafeAppActions.evaluate(context,app.packageName)
-                    Card(Modifier.fillMaxWidth()){
-                        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
-                            Text(app.label,style=MaterialTheme.typography.labelLarge)
-                            Text(minutes.toString()+" мин · "+eligibility.reason)
-                            if(eligibility.allowed){
-                                OutlinedButton(onClick={
-                                    OptimizationEngine.openAppDetails(context,app.packageName)
-                                    ChangeJournal.add(context,"Открыты настройки: "+app.packageName)
-                                    journal=ChangeJournal.read(context)
-                                }){Text("Настройки приложения")}
-                            }
-                        }
-                    }
-                }
-            }
-            HorizontalDivider()
-            Text("Privacy & Debloat",style=MaterialTheme.typography.titleLarge)
-            Text("Сканер ищет кандидатов для проверки. Он не объявляет приложение шпионским только по имени пакета или разрешениям.")
-            Button(onClick={debloatFindings=PrivacyDebloatScanner.scan(context);showDebloat=true},modifier=Modifier.fillMaxWidth()){Text("Сканировать системные приложения")}
-            if(showDebloat){
-                val review=debloatFindings.filter{it.recommendation==DebloatRecommendation.REVIEW}
-                Text("Кандидатов для ручной проверки: "+review.size)
-                review.take(20).forEach{finding->
-                    Card(Modifier.fillMaxWidth()){
-                        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
+                2 -> {
+                    Text("Privacy & Debloat",style=MaterialTheme.typography.headlineMedium)
+                    Text("Сканер показывает кандидатов для ручной проверки и защищает критические системные компоненты.")
+                    Button(onClick={debloatFindings=PrivacyDebloatScanner.scan(context);showDebloat=true},modifier=Modifier.fillMaxWidth()){Text("ПОВТОРИТЬ СКАНИРОВАНИЕ")}
+                    val review=debloatFindings.filter{it.recommendation==DebloatRecommendation.REVIEW}
+                    Text("На проверку: "+review.size+" · Защищено: "+debloatFindings.count{it.category==DebloatCategory.PROTECTED})
+                    review.take(50).forEach{finding->
+                        Card(Modifier.fillMaxWidth()){Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
                             Text(finding.label,style=MaterialTheme.typography.titleMedium)
-                            Text(finding.packageName)
-                            Text(finding.reasons.joinToString(" · "))
+                            Text(finding.packageName,style=MaterialTheme.typography.bodySmall)
+                            Text(finding.reasons.joinToString(" · "),style=MaterialTheme.typography.bodyMedium)
                             val plan=PackageStateController.plan(context,finding)
-                            Text(plan.reason,style=MaterialTheme.typography.labelMedium)
-                            if(plan.canOfferDisable){
-                                Button(onClick={
-                                    ChangeJournal.add(context,"Перед отключением: "+finding.packageName)
-                                    journal=ChangeJournal.read(context)
-                                    PackageStateController.openSystemAppPage(context,finding.packageName)
-                                }){Text("Отключить в Android")}
-                            } else if(plan.canOfferRestore){
-                                OutlinedButton(onClick={
-                                    ChangeJournal.add(context,"Перед восстановлением: "+finding.packageName)
-                                    journal=ChangeJournal.read(context)
-                                    PackageStateController.openSystemAppPage(context,finding.packageName)
-                                }){Text("Восстановить в Android")}
-                            } else {
-                                OutlinedButton(onClick={PackageStateController.openSystemAppPage(context,finding.packageName)}){Text("Проверить настройки")}
-                            }
-                        }
+                            FilledTonalButton(onClick={PackageStateController.openSystemAppPage(context,finding.packageName)}){Text(if(plan.canOfferRestore)"Открыть для восстановления" else "Проверить / отключить")}
+                        }}
                     }
                 }
-                val protectedCount=debloatFindings.count{it.category==DebloatCategory.PROTECTED}
-                Text("Защищённых системных пакетов: "+protectedCount)
-            }
-
-            HorizontalDivider()
-            Text("Журнал",style=MaterialTheme.typography.titleLarge)
-            if(journal.isEmpty()) Text("Изменений и действий пока нет.")
-            journal.take(10).forEach { record ->
-                Card(Modifier.fillMaxWidth()){
-                    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){
-                        Text(record.description)
-                        Text(if(record.type==ChangeType.REVERSIBLE_CHANGE)"Можно откатить" else "Информационная запись",style=MaterialTheme.typography.labelMedium)
-                        if(record.type==ChangeType.REVERSIBLE_CHANGE){
-                            OutlinedButton(onClick={
-                                val result=RollbackManager.rollback(context,record)
-                                if(result.success){ChangeJournal.remove(context,record.id);journal=ChangeJournal.read(context)}
-                            }){Text("Откатить")}
-                        }
+                else -> {
+                    Text("Инструменты",style=MaterialTheme.typography.headlineMedium)
+                    DiagnosticCard("Shizuku",when(shizukuState){ShizukuState.READY->"Подключён";ShizukuState.RUNNING_PERMISSION_NEEDED->"Нужно разрешение";ShizukuState.UNAVAILABLE->"Не подключён"})
+                    if(shizukuState==ShizukuState.UNAVAILABLE){
+                        Text("1. Установи Shizuku.\n2. Включи беспроводную отладку.\n3. Выполни сопряжение в Shizuku.\n4. Вернись и проверь подключение.")
+                        Button(onClick={runCatching{context.startActivity(Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://shizuku.rikka.app/download/"))) }},modifier=Modifier.fillMaxWidth()){Text("Установить Shizuku")}
+                        OutlinedButton(onClick={runCatching{context.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))}},modifier=Modifier.fillMaxWidth()){Text("Параметры разработчика")}
                     }
+                    if(shizukuState==ShizukuState.RUNNING_PERMISSION_NEEDED) Button(onClick={ShizukuAccess.requestPermission()},modifier=Modifier.fillMaxWidth()){Text("Разрешить AndroidOptimizer")}
+                    OutlinedButton(onClick=refreshShizuku,modifier=Modifier.fillMaxWidth()){Text("Проверить Shizuku")}
+                    HorizontalDivider()
+                    Text("Журнал",style=MaterialTheme.typography.titleLarge)
+                    if(journal.isEmpty()) Text("Изменений пока нет.")
+                    journal.take(10).forEach{record->Text("• "+record.description)}
                 }
             }
-            if(journal.isNotEmpty()){
-                TextButton(onClick={ChangeJournal.clear(context);journal=emptyList()}){Text("Очистить журнал")}
-            }
-
-            Button(onClick={snapshot=DeviceDiagnostics.read(context);apps=AppAnalyzer.recentApps(context);refreshShizuku();journal=ChangeJournal.read(context)},modifier=Modifier.fillMaxWidth()){Text("Обновить анализ")}
-            Text("Расширенный доступ включается только после явного разрешения Shizuku. Автоматические системные изменения пока не выполняются.")
         }
     }
 }
 @Composable private fun DiagnosticCard(title:String,value:String){Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text(title,style=MaterialTheme.typography.labelLarge);Text(value,style=MaterialTheme.typography.bodyLarge)}}}
 
 private fun signed(value:Long):String = if(value>0) "+$value" else value.toString()
-\nprivate fun cleanDeviceName(manufacturer:String,model:String):String{val m=manufacturer.trim();val d=model.trim();return if(d.startsWith(m,ignoreCase=true)) d else "$m $d"}\n
+
+private fun cleanDeviceName(manufacturer:String,model:String):String{val m=manufacturer.trim();val d=model.trim();return if(d.startsWith(m,ignoreCase=true)) d else "$m $d"}
