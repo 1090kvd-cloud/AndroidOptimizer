@@ -2,7 +2,7 @@ package cloud.kvd.androidoptimizer
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.graphics.asAndroidBitmap
+import android.graphics.Canvas
 import android.graphics.Bitmap
 import java.io.File
 import org.robolectric.annotation.GraphicsMode
@@ -37,9 +37,9 @@ class NavigationTest {
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
         compose.onNodeWithText("Поиск по названию или пакету").performTextInput("cloud.kvd.androidoptimizer")
         compose.waitUntil(30_000) {
-            compose.onAllNodesWithText("cloud.kvd.androidoptimizer").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasText("cloud.kvd.androidoptimizer") and !hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("cloud.kvd.androidoptimizer").assertIsDisplayed()
+        compose.onNode(hasText("cloud.kvd.androidoptimizer") and !hasSetTextAction()).assertIsDisplayed()
     }
 
     @Test fun unmatchedSearchHasAnExplicitEmptyState() {
@@ -71,9 +71,14 @@ class NavigationTest {
 
     private fun capture(name: String) {
         val file = File("build/outputs/screenshots/$name.png")
-        file.parentFile.mkdirs()
-        file.outputStream().use {
-            compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        file.parentFile?.mkdirs()
+        val bitmap = compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also {
+                view.draw(Canvas(it))
+            }
         }
+        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        bitmap.recycle()
     }
 }
