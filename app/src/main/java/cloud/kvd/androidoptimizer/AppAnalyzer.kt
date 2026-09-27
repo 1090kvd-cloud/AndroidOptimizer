@@ -9,14 +9,14 @@ import android.os.Process
 data class AppUsageInfo(val label:String,val packageName:String,val lastUsed:Long,val foregroundMs:Long,val isSystem:Boolean)
 
 object AppAnalyzer {
-    fun hasUsageAccess(context: Context): Boolean {
+    fun hasUsageAccess(context: Context): Boolean = runCatching {
         val ops=context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        return ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,Process.myUid(),context.packageName)==AppOpsManager.MODE_ALLOWED
-    }
+        ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,Process.myUid(),context.packageName)==AppOpsManager.MODE_ALLOWED
+    }.getOrDefault(false)
     fun installedApps(context:Context):List<AppUsageInfo>{
         val pm=context.packageManager
         return pm.getInstalledApplications(0).mapNotNull{info->runCatching{
-            AppUsageInfo(pm.getApplicationLabel(info).toString(),info.packageName,0L,0L,info.flags and ApplicationInfo.FLAG_SYSTEM != 0)
+            AppUsageInfo(runCatching { pm.getApplicationLabel(info).toString() }.getOrDefault(info.packageName),info.packageName,0L,0L,info.flags and ApplicationInfo.FLAG_SYSTEM != 0)
         }.getOrNull()}.sortedBy{it.label.lowercase()}
     }
     fun recentApps(context: Context, days:Int=7): List<AppUsageInfo> {
@@ -24,8 +24,8 @@ object AppAnalyzer {
         val now=System.currentTimeMillis()
         val manager=context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val pm=context.packageManager
-        val usage=manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,now-days*86400000L,now)
-            .filter{it.totalTimeInForeground>0}.associateBy{it.packageName}
+        val usage=runCatching { manager.queryAndAggregateUsageStats(now-days*86400000L,now) }
+            .getOrNull().orEmpty()
         return installedApps(context).map{app->
             val u=usage[app.packageName]
             app.copy(lastUsed=u?.lastTimeUsed?:0L,foregroundMs=u?.totalTimeInForeground?:0L)

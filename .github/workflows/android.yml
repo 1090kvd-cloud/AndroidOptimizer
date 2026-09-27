@@ -31,7 +31,7 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -39,4 +39,16 @@ jobs:
           name: AndroidOptimizer-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndroidOptimizer-checks
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+            app/build/outputs/screenshots/
+            app/build/reports/lint-results-debug.html
           retention-days: 14
