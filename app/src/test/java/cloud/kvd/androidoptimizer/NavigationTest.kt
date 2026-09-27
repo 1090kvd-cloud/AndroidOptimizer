@@ -28,12 +28,12 @@ class NavigationTest {
     }
 
     @Test fun privacyTabShowsScannerInsteadOfBlankPage() {
-        compose.onNodeWithText("Privacy").performClick()
+        compose.onNodeWithText("Приватность").performClick()
         compose.onNodeWithText("Проверка конфиденциальности").assertIsDisplayed()
     }
 
     @Test fun moreTabShowsSettingsInsteadOfBlankPage() {
-        compose.onNodeWithText("Ещё").performClick()
+        compose.onNodeWithContentDescription("Настройки").performClick()
         compose.onNodeWithText("Доступ и настройки").assertIsDisplayed()
     }
 
@@ -78,14 +78,27 @@ class NavigationTest {
         compose.onAllNodesWithText("Приложения").onFirst().performClick()
         compose.onNodeWithText("Название или пакет").assertIsDisplayed()
         capture("apps")
-        compose.onNodeWithText("Privacy").performClick()
+        compose.onNodeWithContentDescription("Назад").performClick()
+        compose.onNodeWithText("Приватность").performClick()
         compose.onNodeWithText("Проверка конфиденциальности").assertIsDisplayed()
         capture("privacy")
-        compose.onNodeWithText("Ещё").performClick()
+        compose.onNodeWithContentDescription("Назад").performClick()
+        compose.onNodeWithContentDescription("Настройки").performClick()
         compose.onNodeWithText("Доступ и настройки").assertIsDisplayed()
         capture("settings")
-        compose.onNodeWithText("Главная").performClick()
+        compose.onNodeWithContentDescription("Назад").performClick()
         compose.onNodeWithText("Проверить устройство").assertIsDisplayed()
+    }
+
+    @Test fun homeHasNoDuplicateNavigationAndStorageReturnsHome() {
+        compose.onAllNodesWithText("Приложения").assertCountEquals(1)
+        compose.onNodeWithText("Рекомендации").assertDoesNotExist()
+        compose.onNodeWithText("Главная").assertDoesNotExist()
+        compose.onNodeWithText("Память").performClick()
+        compose.onNodeWithText("Управление хранилищем").assertIsDisplayed()
+        capture("storage")
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithContentDescription("Настройки").assertIsDisplayed()
     }
 
     private fun capture(name: String) {

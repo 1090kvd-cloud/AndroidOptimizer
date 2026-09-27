@@ -1,24 +1,22 @@
 package cloud.kvd.androidoptimizer
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val OptimizerBlue = Color(0xFF2762F3)
-val OptimizerTeal = Color(0xFF0F9F91)
+val OptimizerBlue = Color(0xFF2384FF)
+val OptimizerTeal = Color(0xFF00B96B)
 
 @Composable
 fun OptimizerTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) darkColorScheme(
-        primary = Color(0xFFAFC6FF), background = Color(0xFF101724), surface = Color(0xFF182131),
-        surfaceVariant = Color(0xFF263246), secondary = Color(0xFF70DDCB)
-    ) else lightColorScheme(
-        primary = OptimizerBlue, secondary = OptimizerTeal,
-        background = Color(0xFFF3F6FC), surface = Color.White, surfaceVariant = Color(0xFFE9EFF9),
-        onSurface = Color(0xFF18243C), onSurfaceVariant = Color(0xFF63718B),
-        primaryContainer = Color(0xFFDFE9FF), onPrimaryContainer = Color(0xFF163674),
-        secondaryContainer = Color(0xFFDFE9FF), onSecondaryContainer = Color(0xFF245DDC)
-    )
-    MaterialTheme(colorScheme = colors, content = content)
+    MaterialTheme(colorScheme = darkColorScheme(
+        primary = OptimizerBlue, onPrimary = Color.White,
+        secondary = OptimizerTeal, onSecondary = Color.White,
+        background = Color.Black, onBackground = Color(0xFFF1F1F1),
+        surface = Color(0xFF1B1B1B), onSurface = Color(0xFFF1F1F1),
+        surfaceVariant = Color(0xFF303030), onSurfaceVariant = Color(0xFFB0B0B0),
+        primaryContainer = Color(0xFF153762), onPrimaryContainer = Color(0xFFD7E8FF),
+        secondaryContainer = Color(0xFF173D2C), onSecondaryContainer = Color(0xFFB3F3CC),
+        outline = Color(0xFF777777)
+    ), content = content)
 }

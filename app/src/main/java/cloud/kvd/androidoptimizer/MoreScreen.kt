@@ -20,7 +20,7 @@ fun MoreScreen(shizuku: ShizukuState, usageGranted: Boolean, journal: List<Chang
     before: OptimizationSnapshot?, comparison: SnapshotComparison?, onOpen: (Intent) -> Unit,
     onRefresh: () -> Unit, onPermission: () -> Unit, onBefore: () -> Unit, onAfter: () -> Unit, onClearJournal: () -> Unit) {
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { SectionHeading("Доступ и настройки", "AndroidOptimizer 0.3.0") }
+        item { SectionHeading("Доступ и настройки", "AndroidOptimizer 0.4.0") }
         item {
             SettingsCard("Статистика приложений") {
                 Text(if (usageGranted) "Доступ разрешён. Показываем активность за последние 7 дней." else

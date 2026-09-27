@@ -4,6 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -13,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -25,6 +30,8 @@ import rikka.shizuku.Shizuku
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK))
         setContent { OptimizerTheme { OptimizerScreen() } }
     }
 }
@@ -47,10 +54,8 @@ private fun OptimizerScreen() {
     var privacyError by remember { mutableStateOf<String?>(null) }
     var usageGranted by remember { mutableStateOf(false) }
     var shizuku by remember { mutableStateOf(ShizukuAccess.state()) }
-    var profileName by rememberSaveable { mutableStateOf(OptimizationProfile.DAILY.name) }
     var before by remember { mutableStateOf<OptimizationSnapshot?>(null) }
     var comparison by remember { mutableStateOf<SnapshotComparison?>(null) }
-    val profile = OptimizationProfile.valueOf(profileName)
     val notify: (String) -> Unit = { message -> scope.launch { snackbar.showSnackbar(message) }; Unit }
     val open: (Intent) -> Unit = { intent ->
         try { context.startActivity(intent) }
@@ -105,26 +110,25 @@ private fun OptimizerScreen() {
             scanning = false
         }
     }
+    BackHandler(enabled = section != 0) { section = 0 }
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                val labels = listOf("Главная", "Приложения", "Privacy", "Ещё")
-                val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Apps, Icons.Outlined.Shield, Icons.Outlined.Settings)
-                labels.forEachIndexed { index, label ->
-                    NavigationBarItem(selected = section == index, onClick = { section = index },
-                        icon = { Icon(icons[index], contentDescription = null) }, label = { Text(label, maxLines = 1) })
+        snackbarHost = { SnackbarHost(snackbar) }
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (section != 0) {
+                IconButton(onClick = { section = 0 }, modifier = Modifier.padding(start = 8.dp)) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад")
                 }
             }
-        }
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+            Box(Modifier.weight(1f)) {
             when (section) {
-                0 -> DashboardScreen(snapshot, apps.size, loading, profile,
-                    onProfile = { profileName = it.name }, onRefresh = { revision++ },
+                0 -> DashboardScreen(snapshot, apps.size, loading, onRefresh = { revision++ },
                     onApps = { section = 1 }, onPrivacy = { section = 2 }, onAccess = { section = 3 },
-                    onStorage = { open(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)) },
+                    onStorage = { section = 4 },
                     onBattery = { open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)) })
+                4 -> StorageScreen(snapshot,
+                    onStorage = { open(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)) },
+                    onFiles = { open(Intent(android.app.DownloadManager.ACTION_VIEW_DOWNLOADS)) })
                 1 -> ApplicationsScreen(apps, loading, appError, usageGranted,
                     onRefresh = { revision++ }, onUsageAccess = { open(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
                     onApp = appDetails)
@@ -138,6 +142,7 @@ private fun OptimizerScreen() {
                     onBefore = { before = SnapshotTracker.capture(context); comparison = null },
                     onAfter = { before?.let { comparison = SnapshotTracker.compare(it, SnapshotTracker.capture(context)) } },
                     onClearJournal = { ChangeJournal.clear(context); journal = emptyList() })
+            }
             }
         }
     }
