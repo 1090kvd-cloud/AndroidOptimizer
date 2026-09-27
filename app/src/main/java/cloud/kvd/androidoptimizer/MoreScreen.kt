@@ -20,7 +20,7 @@ fun MoreScreen(shizuku: ShizukuState, usageGranted: Boolean, journal: List<Chang
     before: OptimizationSnapshot?, comparison: SnapshotComparison?, onOpen: (Intent) -> Unit,
     onRefresh: () -> Unit, onPermission: () -> Unit, onBefore: () -> Unit, onAfter: () -> Unit, onClearJournal: () -> Unit) {
     LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { SectionHeading("Доступ и настройки", "AndroidOptimizer 0.4.0") }
+        item { SectionHeading("Доступ и настройки", "AndroidOptimizer 0.5.0") }
         item {
             SettingsCard("Статистика приложений") {
                 Text(if (usageGranted) "Доступ разрешён. Показываем активность за последние 7 дней." else
@@ -37,7 +37,7 @@ fun MoreScreen(shizuku: ShizukuState, usageGranted: Boolean, journal: List<Chang
                 }, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 Text("Shizuku — отдельное приложение для доступа к системным API с правами ADB/root. Поиск и проверка приложений работают без него.",
                     style = MaterialTheme.typography.bodyMedium)
-                Text("В этой версии изменение состояния пакетов выполняется через настройки Android.", style = MaterialTheme.typography.bodySmall)
+                Text("Отключение и повторное включение доступны в разделе «Приватность» после подтверждения. Защищённые компоненты отключать нельзя.", style = MaterialTheme.typography.bodySmall)
                 if (shizuku == ShizukuState.UNAVAILABLE) {
                     Text("1. Установите Shizuku.\n2. В его инструкции выполните сопряжение через беспроводную отладку (Android 11+).\n3. Запустите сервис и вернитесь сюда.\nНа Android 8–10 для запуска нужен компьютер или root.")
                     Button(onClick = { onOpen(Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app/download/"))) }) { Text("Скачать Shizuku") }
@@ -62,7 +62,7 @@ fun MoreScreen(shizuku: ShizukuState, usageGranted: Boolean, journal: List<Chang
             }
         }
         item {
-            SectionHeading("История действий", "Переходы в настройки не означают, что приложение отключено")
+            SectionHeading("История действий", "Изменения через Shizuku записываются после проверки результата")
             if (journal.isEmpty()) Text("История пока пуста", Modifier.padding(top = 12.dp))
             else TextButton(onClick = onClearJournal) { Text("Очистить историю") }
         }

@@ -49,6 +49,7 @@ private fun OptimizerScreen() {
     var findings by remember { mutableStateOf<List<SystemAppFinding>>(emptyList()) }
     var journal by remember { mutableStateOf<List<ChangeRecord>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var changingPackage by remember { mutableStateOf<String?>(null) }
     var scanning by remember { mutableStateOf(false) }
     var appError by remember { mutableStateOf<String?>(null) }
     var privacyError by remember { mutableStateOf<String?>(null) }
@@ -132,7 +133,22 @@ private fun OptimizerScreen() {
                 1 -> ApplicationsScreen(apps, loading, appError, usageGranted,
                     onRefresh = { revision++ }, onUsageAccess = { open(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
                     onApp = appDetails)
-                2 -> PrivacyScreen(findings, scanning, privacyError, onRefresh = { revision++ }, onApp = appDetails)
+                2 -> PrivacyScreen(findings, scanning, privacyError, onRefresh = { revision++ }, onApp = appDetails,
+                    shizuku = shizuku, changingPackage = changingPackage, onSetup = { section = 3 },
+                    onChange = { pkg, enabled ->
+                        if (changingPackage == null) {
+                            changingPackage = pkg
+                            scope.launch {
+                                try {
+                                    val result = PackageControl.change(context.applicationContext, pkg, enabled)
+                                    notify(result.message)
+                                } finally {
+                                    changingPackage = null
+                                    revision++
+                                }
+                            }
+                        }
+                    })
                 3 -> MoreScreen(shizuku, usageGranted, journal, before, comparison,
                     onOpen = open, onRefresh = { revision++ },
                     onPermission = {

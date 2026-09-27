@@ -80,12 +80,20 @@ fun ApplicationsScreen(apps: List<AppUsageInfo>, loading: Boolean, error: String
 }
 
 @Composable
-fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: String?, onRefresh: () -> Unit, onApp: (String) -> Unit) {
+fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: String?, onRefresh: () -> Unit, onApp: (String) -> Unit,
+    shizuku: ShizukuState, changingPackage: String?, onSetup: () -> Unit, onChange: (String, Boolean) -> Unit) {
+    var pending by remember { mutableStateOf<SystemAppFinding?>(null) }
+    pending?.let { finding ->
+        PackageChangeConfirmation(finding, onDismiss = { pending = null }, onConfirm = {
+            pending = null
+            onChange(finding.packageName, !finding.enabled)
+        })
+    }
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableIntStateOf(0) }
     val visible = remember(findings, query, filter) {
         findings.filter { finding ->
-            (filter == 1 || finding.recommendation == DebloatRecommendation.REVIEW) &&
+            (when (filter) { 1 -> true; 2 -> !finding.enabled; else -> finding.recommendation == DebloatRecommendation.REVIEW }) &&
                 (finding.label.contains(query.trim(), true) || finding.packageName.contains(query.trim(), true))
         }
     }
@@ -95,7 +103,11 @@ fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: Str
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         SearchField(query, { query = it })
-        FilterRow(listOf("На проверку", "Все системные"), filter) { filter = it }
+        FilterRow(listOf("На проверку", "Все системные", "Отключённые"), filter) { filter = it }
+        if (shizuku != ShizukuState.READY) TextButton(onClick = onSetup) {
+            Text(if (shizuku == ShizukuState.UNAVAILABLE) "Подключить Shizuku для отключения" else "Разрешить доступ Shizuku")
+        }
+        if (changingPackage != null) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (error != null) EmptyResult(error, onRefresh)
         else {
@@ -103,7 +115,7 @@ fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: Str
                 Modifier.padding(vertical = 10.dp), style = MaterialTheme.typography.labelMedium)
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (visible.isEmpty() && !loading) item {
-                    EmptyResult(if (query.isNotBlank()) "Нет совпадений по запросу." else
+                    EmptyResult(if (query.isNotBlank()) "Нет совпадений по запросу." else if (filter == 2) "Отключённых приложений нет." else
                         "Совпадений по правилам не найдено. Можно открыть список всех системных приложений.")
                 }
                 items(visible, key = { it.packageName }) { finding ->
@@ -120,17 +132,21 @@ fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: Str
                             }
                             val protected = finding.category == DebloatCategory.PROTECTED
                             Text(when {
-                                protected -> "Системный компонент · сохранить"
                                 !finding.enabled -> "Отключено в Android"
+                                protected -> "Системный компонент · сохранить"
                                 finding.recommendation == DebloatRecommendation.REVIEW -> "Требует ручной проверки"
                                 else -> "Назначение не определено"
                             }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                             finding.reasons.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-                            if (!protected) {
-                                Text("Возможность отключения определяет Android. Перед изменением проверьте назначение приложения.",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                OutlinedButton(onClick = { onApp(finding.packageName) }, modifier = Modifier.fillMaxWidth()) {
-                                    Text(if (finding.enabled) "Открыть настройки приложения" else "Открыть для восстановления")
+                            if (!protected || !finding.enabled) {
+                                Button(onClick = { pending = finding },
+                                    enabled = !loading && changingPackage == null && shizuku == ShizukuState.READY,
+                                    modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (changingPackage == finding.packageName) "Применяем…" else
+                                        if (finding.enabled) "Отключить" else "Включить обратно")
+                                }
+                                TextButton(onClick = { onApp(finding.packageName) }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Настройки приложения")
                                 }
                             }
                         }
@@ -139,6 +155,21 @@ fun PrivacyScreen(findings: List<SystemAppFinding>, loading: Boolean, error: Str
             }
         }
     }
+}
+
+@Composable
+fun PackageChangeConfirmation(finding: SystemAppFinding, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(onDismissRequest = onDismiss,
+        title = { Text(if (finding.enabled) "Отключить приложение?" else "Включить приложение?") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(finding.label, fontWeight = FontWeight.Bold)
+            Text(finding.packageName, style = MaterialTheme.typography.bodySmall)
+            Text(if (finding.enabled)
+                "Приложение перестанет работать для текущего пользователя. Связанные функции телефона могут стать недоступны. Данные сохранятся; вернуть приложение можно в разделе «Отключённые»."
+                else "Приложение снова сможет запускаться и работать в фоне.")
+        } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Подтвердить") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } })
 }
 
 @Composable

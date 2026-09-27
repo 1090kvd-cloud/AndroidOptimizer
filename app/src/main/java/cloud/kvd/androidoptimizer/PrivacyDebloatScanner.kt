@@ -17,26 +17,19 @@ data class SystemAppFinding(
 )
 
 object PrivacyDebloatScanner {
-    private val protectedPrefixes = listOf(
-        "android",
-        "com.android.systemui",
-        "com.android.settings",
-        "com.android.phone",
-        "com.android.providers",
-        "com.google.android.gms"
-    )
     private val telemetryHints = listOf("analytics","telemetry","metrics","feedback","diagnostic")
     private val advertisingHints = listOf("ads","advert","recommend","promotion")
 
     fun scan(context:Context):List<SystemAppFinding> {
         val pm=context.packageManager
-        return pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        return pm.getInstalledApplications(PackageManager.GET_META_DATA or PackageManager.MATCH_DISABLED_COMPONENTS)
             .filter { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 }
             .map { info ->
                 val pkg=info.packageName.lowercase()
                 val label=runCatching { pm.getApplicationLabel(info).toString() }.getOrDefault(info.packageName)
                 val known=OemDebloatDatabase.find(info.packageName)
-                val protected=protectedPrefixes.any { pkg==it || pkg.startsWith(it+".") } || known?.risk==OemRisk.PROTECTED
+                val protected=PackageCommands.isProtected(info.packageName) || known?.risk==OemRisk.PROTECTED ||
+                    info.uid % 100000 < 10000 || info.flags and ApplicationInfo.FLAG_PERSISTENT != 0
                 val requested=runCatching {
                     pm.getPackageInfo(info.packageName,PackageManager.GET_PERMISSIONS).requestedPermissions?.toList().orEmpty()
                 }.getOrDefault(emptyList())

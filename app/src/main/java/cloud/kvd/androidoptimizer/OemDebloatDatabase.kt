@@ -12,6 +12,7 @@ data class KnownOemPackage(
 
 object OemDebloatDatabase {
     private val entries=listOf(
+        KnownOemPackage("com.google.android.printservice.recommendation","Google","Print service recommendations",OemRisk.CAUTION,"Подбирает службы печати для обнаруженных принтеров. Это не признак рекламы или слежки; отключение может нарушить подбор служб печати."),
         KnownOemPackage("com.transsion.hamal","Transsion","User experience logging",OemRisk.RECOMMENDED_REVIEW,"Сообщество связывает пакет с журналированием пользовательского опыта."),
         KnownOemPackage("com.transsion.trancare","Transsion","Telemetry candidate",OemRisk.RECOMMENDED_REVIEW,"Кандидат телеметрии; требуется проверка на конкретной прошивке."),
         KnownOemPackage("com.transsion.statisticalsales","Transsion","Statistical sales",OemRisk.RECOMMENDED_REVIEW,"Служебная статистика производителя."),
