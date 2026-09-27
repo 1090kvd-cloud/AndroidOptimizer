@@ -10,7 +10,7 @@ val OptimizerTeal = Color(0xFF00B96B)
 @Composable
 fun OptimizerTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = darkColorScheme(
-        primary = OptimizerBlue, onPrimary = Color.White,
+        primary = Color(0xFF0965D6), onPrimary = Color.White,
         secondary = OptimizerTeal, onSecondary = Color.White,
         background = Color.Black, onBackground = Color(0xFFF1F1F1),
         surface = Color(0xFF1B1B1B), onSurface = Color(0xFFF1F1F1),
