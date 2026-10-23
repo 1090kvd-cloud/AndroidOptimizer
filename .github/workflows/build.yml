@@ -16,7 +16,17 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+        shell: bash
+        run: ./gradlew testDebugUnitTest --console=plain --stacktrace 2>&1 | tee gradle.log
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          errs=$(grep -E '^e: |What went wrong|error:|FAILED' -A3 gradle.log | head -60 | enc)
+          echo "::error title=Gradle errors::${errs}"
+          tail_=$(tail -40 gradle.log | enc)
+          echo "::error title=Gradle log tail::${tail_}"
       - name: Build debug APK
         run: ./gradlew assembleDebug
       - name: Lint
