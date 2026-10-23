@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AndroidOptimizer</string>
+
+    <string name="tab_overview">Обзор</string>
+    <string name="tab_apps">Приложения</string>
+    <string name="action_refresh">Обновить</string>
+
+    <string name="device_android">Android %1$s (API %2$d)</string>
+
+    <string name="metric_ram">Оперативная память</string>
+    <string name="metric_storage">Хранилище</string>
+    <string name="metric_battery">Батарея</string>
+    <string name="metric_used_percent">Занято %1$d%%</string>
+    <string name="metric_free_of">Свободно %1$s из %2$s</string>
+    <string name="battery_unknown">Неизвестно</string>
+    <string name="battery_charging">Заряжается</string>
+    <string name="battery_discharging">Работает от батареи</string>
+    <string name="battery_temperature">Температура %1$s °C</string>
+
+    <string name="section_recommendations">Рекомендации</string>
+    <string name="reco_none_title">Всё в порядке</string>
+    <string name="reco_none_body">Явных проблем не найдено. Приложение показывает только реальные данные устройства и не имитирует «очистку».</string>
+
+    <string name="reco_storage_title">Мало места в хранилище</string>
+    <string name="reco_storage_body">Нехватка свободного места замедляет систему и приложения. Проверьте крупные файлы и неиспользуемые приложения.</string>
+    <string name="reco_storage_action">Освободить место</string>
+
+    <string name="reco_ram_title">Память под нагрузкой</string>
+    <string name="reco_ram_body">Android намеренно держит приложения в кэше ОЗУ, поэтому малый объём свободной памяти сам по себе — норма. Сейчас он критически низкий: проверьте, какими приложениями вы пользуетесь больше всего.</string>
+    <string name="reco_ram_action">Показать приложения</string>
+
+    <string name="reco_hot_title">Батарея перегрета</string>
+    <string name="reco_hot_body">Прекратите зарядку и закройте ресурсоёмкие приложения, пока устройство не остынет. Избегайте прямых солнечных лучей.</string>
+    <string name="reco_battery_action">Расход заряда</string>
+
+    <string name="reco_low_title">Низкий заряд батареи</string>
+    <string name="reco_low_body">Подключите зарядное устройство или проверьте, какие приложения расходуют заряд.</string>
+
+    <string name="reco_access_title">Анализ приложений выключен</string>
+    <string name="reco_access_body">Выдайте доступ к статистике использования, чтобы видеть, когда приложения запускались в последний раз. Данные остаются на устройстве.</string>
+    <string name="reco_access_action">Выдать доступ</string>
+
+    <plurals name="reco_idle_title">
+        <item quantity="one">%d приложение не использовалось 60+ дней</item>
+        <item quantity="few">%d приложения не использовались 60+ дней</item>
+        <item quantity="many">%d приложений не использовались 60+ дней</item>
+        <item quantity="other">%d приложения не использовались 60+ дней</item>
+    </plurals>
+    <string name="reco_idle_body">Редко используемые приложения занимают место и могут работать в фоне. Решение об удалении — за вами: система запросит подтверждение.</string>
+    <string name="reco_idle_action">Просмотреть</string>
+
+    <string name="section_modes">Режимы работы</string>
+    <string name="mode_noroot">Без root (системные средства)</string>
+    <string name="mode_shizuku">Shizuku / ADB</string>
+    <string name="mode_root">Root</string>
+    <string name="mode_active">Активен</string>
+    <string name="mode_planned">В планах</string>
+    <string name="modes_note">Приложение только открывает системные экраны и не меняет настройки системы без вашего подтверждения.</string>
+
+    <string name="apps_search_hint">Поиск приложений</string>
+    <string name="sort_idle">Давно не использовались</string>
+    <string name="sort_screen_time">Экранное время</string>
+    <string name="sort_name">По имени</string>
+    <string name="filter_system">Системные</string>
+    <string name="apps_usage_banner_title">Нет доступа к статистике</string>
+    <string name="apps_usage_banner_body">Без него нельзя показать последний запуск и экранное время. Доступна только сортировка по имени.</string>
+    <string name="action_grant">Выдать доступ</string>
+    <string name="apps_empty">Приложения не найдены</string>
+    <string name="app_used_today">Использовалось сегодня</string>
+    <string name="app_not_used_yet">Ещё не запускалось</string>
+    <plurals name="app_idle_days">
+        <item quantity="one">Не использовалось %d день</item>
+        <item quantity="few">Не использовалось %d дня</item>
+        <item quantity="many">Не использовалось %d дней</item>
+        <item quantity="other">Не использовалось %d дня</item>
+    </plurals>
+    <string name="app_screen_time_7d">За 7 дней: %1$s</string>
+    <string name="duration_hm">%1$d ч %2$d мин</string>
+    <string name="duration_m">%1$d мин</string>
+    <string name="duration_less_than_minute">менее минуты</string>
+    <string name="cd_app_info">О приложении</string>
+    <string name="cd_app_uninstall">Удалить</string>
+    <string name="toast_open_failed">Не удалось открыть системный экран</string>
+</resources>

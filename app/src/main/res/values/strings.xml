@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AndroidOptimizer</string>
+
+    <string name="tab_overview">Overview</string>
+    <string name="tab_apps">Apps</string>
+    <string name="action_refresh">Refresh</string>
+
+    <string name="device_android">Android %1$s (API %2$d)</string>
+
+    <string name="metric_ram">Memory (RAM)</string>
+    <string name="metric_storage">Storage</string>
+    <string name="metric_battery">Battery</string>
+    <string name="metric_used_percent">%1$d%% used</string>
+    <string name="metric_free_of">%1$s free of %2$s</string>
+    <string name="battery_unknown">Unknown</string>
+    <string name="battery_charging">Charging</string>
+    <string name="battery_discharging">On battery</string>
+    <string name="battery_temperature">Temperature %1$s °C</string>
+
+    <string name="section_recommendations">Recommendations</string>
+    <string name="reco_none_title">All good</string>
+    <string name="reco_none_body">No obvious problems found. The app only reports real device data and never fakes a \"cleanup\".</string>
+
+    <string name="reco_storage_title">Storage is running low</string>
+    <string name="reco_storage_body">Little free space slows the system and apps down. Review large files and unused apps.</string>
+    <string name="reco_storage_action">Free up space</string>
+
+    <string name="reco_ram_title">Memory is under pressure</string>
+    <string name="reco_ram_body">Android keeps apps cached in RAM on purpose, so low free memory alone is normal. Right now it is critically low — check which apps you use the most.</string>
+    <string name="reco_ram_action">Show apps</string>
+
+    <string name="reco_hot_title">Battery is hot</string>
+    <string name="reco_hot_body">Stop charging and close demanding apps until the device cools down. Avoid direct sunlight.</string>
+    <string name="reco_battery_action">Battery usage</string>
+
+    <string name="reco_low_title">Battery is low</string>
+    <string name="reco_low_body">Connect a charger or review which apps drain the battery.</string>
+
+    <string name="reco_access_title">App analysis is off</string>
+    <string name="reco_access_body">Grant Usage Access so the app can show when apps were last used. The data never leaves your device.</string>
+    <string name="reco_access_action">Grant access</string>
+
+    <plurals name="reco_idle_title">
+        <item quantity="one">%d app unused for 60+ days</item>
+        <item quantity="other">%d apps unused for 60+ days</item>
+    </plurals>
+    <string name="reco_idle_body">Rarely used apps take up space and may run in the background. You decide what to remove — the system will ask for confirmation.</string>
+    <string name="reco_idle_action">Review apps</string>
+
+    <string name="section_modes">Operating modes</string>
+    <string name="mode_noroot">No root (system tools)</string>
+    <string name="mode_shizuku">Shizuku / ADB</string>
+    <string name="mode_root">Root</string>
+    <string name="mode_active">Active</string>
+    <string name="mode_planned">Planned</string>
+    <string name="modes_note">The app only opens system screens. It never changes system settings without your confirmation.</string>
+
+    <string name="apps_search_hint">Search apps</string>
+    <string name="sort_idle">Unused longest</string>
+    <string name="sort_screen_time">Screen time</string>
+    <string name="sort_name">By name</string>
+    <string name="filter_system">System apps</string>
+    <string name="apps_usage_banner_title">Usage Access is off</string>
+    <string name="apps_usage_banner_body">Without it the app cannot show last use or screen time. Sorting by name only.</string>
+    <string name="action_grant">Grant access</string>
+    <string name="apps_empty">No apps found</string>
+    <string name="app_used_today">Used today</string>
+    <string name="app_not_used_yet">Not used yet</string>
+    <plurals name="app_idle_days">
+        <item quantity="one">Unused for %d day</item>
+        <item quantity="other">Unused for %d days</item>
+    </plurals>
+    <string name="app_screen_time_7d">7 days: %1$s</string>
+    <string name="duration_hm">%1$d h %2$d min</string>
+    <string name="duration_m">%1$d min</string>
+    <string name="duration_less_than_minute">under a minute</string>
+    <string name="cd_app_info">App info</string>
+    <string name="cd_app_uninstall">Uninstall</string>
+    <string name="toast_open_failed">Couldn\'t open the system screen</string>
+</resources>
