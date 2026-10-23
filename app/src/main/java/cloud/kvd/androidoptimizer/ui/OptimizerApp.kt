@@ -1,6 +1,7 @@
 package cloud.kvd.androidoptimizer.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
