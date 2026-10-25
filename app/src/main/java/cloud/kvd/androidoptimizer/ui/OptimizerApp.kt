@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -22,7 +24,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,13 +36,20 @@ import cloud.kvd.androidoptimizer.domain.AppSort
 
 private enum class AppTab(val labelRes: Int, val icon: ImageVector) {
     OVERVIEW(R.string.tab_overview, Icons.Filled.Home),
-    APPS(R.string.tab_apps, Icons.AutoMirrored.Filled.List)
+    APPS(R.string.tab_apps, Icons.AutoMirrored.Filled.List),
+    PROFILES(R.string.tab_profiles, Icons.Filled.Settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OptimizerApp(viewModel: OptimizerViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Одноразовые сообщения ViewModel (результат применения профиля и отката).
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+    }
 
     // Возврат из системных настроек (например, после выдачи Usage Access) обновляет данные сам.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
@@ -84,6 +95,12 @@ fun OptimizerApp(viewModel: OptimizerViewModel = viewModel()) {
                     state = state,
                     sort = appsSort,
                     onSortChange = { appsSort = it },
+                    modifier = Modifier.padding(padding)
+                )
+                AppTab.PROFILES -> ProfilesScreen(
+                    state = state,
+                    onApply = viewModel::applyProfile,
+                    onRevert = viewModel::revert,
                     modifier = Modifier.padding(padding)
                 )
             }

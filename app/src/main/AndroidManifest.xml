@@ -7,6 +7,11 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Специальное разрешение: пользователь включает его вручную. Нужно для профилей (таймаут экрана, яркость). -->
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Видимость запускаемых приложений без широкого QUERY_ALL_PACKAGES. -->
     <queries>
         <intent>

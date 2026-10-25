@@ -55,3 +55,10 @@ fun appDetailsIntents(packageName: String): Array<Intent> = arrayOf(
 fun uninstallIntents(packageName: String): Array<Intent> = arrayOf(
     Intent(Intent.ACTION_DELETE, packageUri(packageName))
 )
+
+/** Экран «Изменение системных настроек» именно для нашего приложения; запасной вариант — общий список. */
+fun writeSettingsIntents(packageName: String): Array<Intent> = arrayOf(
+    Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, packageUri(packageName)),
+    Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS),
+    Intent(Settings.ACTION_SETTINGS)
+)
