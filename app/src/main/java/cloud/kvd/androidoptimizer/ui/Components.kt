@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -184,13 +183,13 @@ fun Badge(text: String, modifier: Modifier = Modifier, highlight: Boolean = fals
 @Composable
 fun AppIcon(packageName: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(null, packageName) {
-        val loaded = withContext(Dispatchers.Default) {
+    var bitmap by remember(packageName) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(packageName) {
+        bitmap = withContext(Dispatchers.Default) {
             runCatching {
                 context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap()
             }.getOrNull()
         }
-        value = loaded
     }
     val loaded = bitmap
     if (loaded != null) {

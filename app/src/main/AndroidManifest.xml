@@ -29,6 +29,8 @@
     </queries>
 
     <application
+        tools:ignore="DataExtractionRules"
+        tools:targetApi="33"
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
