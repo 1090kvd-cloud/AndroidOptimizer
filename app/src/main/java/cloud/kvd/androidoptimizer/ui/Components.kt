@@ -184,12 +184,13 @@ fun Badge(text: String, modifier: Modifier = Modifier, highlight: Boolean = fals
 @Composable
 fun AppIcon(packageName: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(initialValue = null, key1 = packageName) {
-        value = withContext(Dispatchers.Default) {
+    val bitmap by produceState<ImageBitmap?>(null, packageName) {
+        val loaded = withContext(Dispatchers.Default) {
             runCatching {
                 context.packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap()
             }.getOrNull()
         }
+        value = loaded
     }
     val loaded = bitmap
     if (loaded != null) {

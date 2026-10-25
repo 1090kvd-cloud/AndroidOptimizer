@@ -47,7 +47,9 @@ jobs:
             findings=$(grep -E 'Lint found|Error:|What went wrong' -A3 lint.log | head -40 | enc)
             summary=""
           fi
+          warnings=$(grep -E ': Warning' "$report" 2>/dev/null | sed -e 's#.*/src/#src/#' | head -30 | enc)
           echo "::error title=Lint errors::${findings}"
+          echo "::warning title=Lint warnings::${warnings}"
           echo "::warning title=Lint summary::${summary}"
       - uses: actions/upload-artifact@v4
         with:
