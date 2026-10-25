@@ -12,7 +12,15 @@
         android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Видимость запускаемых приложений без широкого QUERY_ALL_PACKAGES. -->
+    <!--
+        Полный список пакетов, включая служебные системные (Play Services, WebView и др.).
+        Google Play ограничивает это разрешение, но приложение распространяется напрямую (сайдлоад).
+    -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Запасной вариант видимости запускаемых приложений. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />

@@ -2,20 +2,25 @@ package cloud.kvd.androidoptimizer.data
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.usage.StorageStatsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Process
+import android.os.storage.StorageManager
 import cloud.kvd.androidoptimizer.domain.AppEntry
+import cloud.kvd.androidoptimizer.domain.AppSize
 import cloud.kvd.androidoptimizer.domain.DAY_MS
+import java.io.IOException
 
 /**
- * Список запускаемых приложений + статистика использования.
- * Видимость пакетов обеспечена через <queries> в манифесте, без QUERY_ALL_PACKAGES.
+ * Полный список установленных пакетов + статистика использования и размеры.
+ * Для полного списка нужно QUERY_ALL_PACKAGES (приложение не предназначено для Google Play).
  * Все методы блокирующие — вызывать вне главного потока.
  */
 class AppUsageRepository(private val context: Context) {
@@ -34,22 +39,48 @@ class AppUsageRepository(private val context: Context) {
     fun loadApps(nowMs: Long): List<AppEntry> {
         val pm = context.packageManager
         val usage = if (hasUsageAccess()) readUsage(nowMs) else UsageData.EMPTY
+        val launchable = queryLaunchables(pm).map { it.activityInfo.packageName }.toHashSet()
 
-        return queryLaunchables(pm)
-            .map { it.activityInfo.applicationInfo }
-            .distinctBy { it.packageName }
-            .filter { it.packageName != context.packageName }
-            .map { info ->
+        return queryInstalled(pm)
+            .mapNotNull { pkg ->
+                val info = pkg.applicationInfo ?: return@mapNotNull null
+                if (info.packageName == context.packageName) return@mapNotNull null
                 AppEntry(
                     packageName = info.packageName,
                     label = info.loadLabel(pm).toString(),
                     isSystem = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
-                    installedAtMs = firstInstallTime(pm, info.packageName) ?: nowMs,
+                    installedAtMs = pkg.firstInstallTime.takeIf { it > 0L } ?: nowMs,
                     lastUsedMs = usage.lastUsed[info.packageName],
-                    foregroundMs7d = usage.foreground7d[info.packageName] ?: 0L
+                    foregroundMs7d = usage.foreground7d[info.packageName] ?: 0L,
+                    hasLauncher = info.packageName in launchable,
+                    isEnabled = info.enabled
                 )
             }
             .sortedBy { it.label.lowercase() }
+    }
+
+    /**
+     * Размеры приложений (код + данные + кэш). Требует Usage Access; пакеты, для которых система
+     * не отдала данные, пропускаются. [shouldContinue] позволяет прервать долгий обход.
+     */
+    fun loadSizes(packageNames: List<String>, shouldContinue: () -> Boolean = { true }): Map<String, AppSize> {
+        val manager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+        val user = Process.myUserHandle()
+        val result = HashMap<String, AppSize>(packageNames.size)
+        for (name in packageNames) {
+            if (!shouldContinue()) break
+            try {
+                val stats = manager.queryStatsForPackage(StorageManager.UUID_DEFAULT, name, user)
+                result[name] = AppSize(stats.appBytes, stats.dataBytes, stats.cacheBytes)
+            } catch (e: PackageManager.NameNotFoundException) {
+                // пакет исчез между запросами
+            } catch (e: IOException) {
+                // система не смогла посчитать — пропускаем
+            } catch (e: SecurityException) {
+                return result // доступа нет вовсе
+            }
+        }
+        return result
     }
 
     private class UsageData(val lastUsed: Map<String, Long>, val foreground7d: Map<String, Long>) {
@@ -94,15 +125,12 @@ class AppUsageRepository(private val context: Context) {
     }
 
     @Suppress("DEPRECATION")
-    private fun firstInstallTime(pm: PackageManager, packageName: String): Long? = try {
+    private fun queryInstalled(pm: PackageManager): List<PackageInfo> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0L)).firstInstallTime
+            pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(0L))
         } else {
-            pm.getPackageInfo(packageName, 0).firstInstallTime
+            pm.getInstalledPackages(0)
         }
-    } catch (e: PackageManager.NameNotFoundException) {
-        null
-    }
 
     private companion object {
         const val LOOKBACK_DAYS = 180L

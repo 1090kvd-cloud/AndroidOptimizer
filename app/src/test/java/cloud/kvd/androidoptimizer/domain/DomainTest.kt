@@ -2,6 +2,7 @@ package cloud.kvd.androidoptimizer.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -108,10 +109,86 @@ class DomainTest {
 
     @Test fun filter_hidesSystemAndMatchesQuery() {
         val apps = listOf(app("com.a", "Alpha"), app("com.b", "Beta", system = true), app("org.c", "Gamma"))
-        assertEquals(listOf("com.a", "org.c"), filterApps(apps, "", false).map { it.packageName })
-        assertEquals(3, filterApps(apps, "", true).size)
-        assertEquals(listOf("com.a"), filterApps(apps, "  alp ", false).map { it.packageName })
-        assertEquals(listOf("org.c"), filterApps(apps, "ORG.", false).map { it.packageName })
+        assertEquals(listOf("com.a", "org.c"), filterApps(apps, "", AppScope.USER).map { it.packageName })
+        assertEquals(listOf("com.b"), filterApps(apps, "", AppScope.SYSTEM).map { it.packageName })
+        assertEquals(3, filterApps(apps, "", AppScope.ALL).size)
+        assertEquals(listOf("com.a"), filterApps(apps, "  alp ", AppScope.USER).map { it.packageName })
+        assertEquals(listOf("org.c"), filterApps(apps, "ORG.", AppScope.USER).map { it.packageName })
+    }
+
+    @Test fun isIdle_requiresLauncherAndEnabled() {
+        val now = 500 * DAY_MS
+        assertTrue(app("a", lastUsed = 1 * DAY_MS).isIdle(now))
+        assertFalse(app("a", lastUsed = 1 * DAY_MS).copy(hasLauncher = false).isIdle(now))
+        assertFalse(app("a", lastUsed = 1 * DAY_MS).copy(isEnabled = false).isIdle(now))
+    }
+
+    @Test fun sort_sizeDescendingUnknownLast() {
+        val apps = listOf(
+            app("small").copy(size = AppSize(1, 1, 1)),
+            app("unknown"),
+            app("big").copy(size = AppSize(100, 50, 10))
+        )
+        assertEquals(listOf("big", "small", "unknown"), apps.sortedFor(AppSort.SIZE).map { it.packageName })
+    }
+
+    @Test fun topBySize_skipsSystemAndUnknown() {
+        val apps = listOf(
+            app("sys", system = true).copy(size = AppSize(900, 0, 0)),
+            app("a").copy(size = AppSize(10, 0, 0)),
+            app("b").copy(size = AppSize(30, 0, 0)),
+            app("c")
+        )
+        assertEquals(listOf("b", "a"), topBySize(apps, 5).map { it.packageName })
+        assertEquals(listOf("sys"), topBySize(apps, 1, includeSystem = true).map { it.packageName })
+        assertEquals(listOf("b"), topBySize(apps, 1).map { it.packageName })
+    }
+
+    @Test fun storageBreakdown_partsSumToTotal() {
+        val s = snapshot(totalStorage = 100 * gb, freeStorage = 40 * gb) // занято 60
+        val apps = listOf(
+            app("a").copy(size = AppSize(10 * gb, 20 * gb, 5 * gb)),
+            app("b").copy(size = AppSize(5 * gb, 5 * gb, 3 * gb))
+        )
+        val b = storageBreakdown(s, apps)!!
+        assertEquals(40 * gb, b.appsBytes)
+        assertEquals(8 * gb, b.cacheBytes)
+        assertEquals(12 * gb, b.otherBytes)
+        assertEquals(40 * gb, b.freeBytes)
+        assertEquals(100 * gb, b.appsBytes + b.cacheBytes + b.otherBytes + b.freeBytes)
+    }
+
+    @Test fun storageBreakdown_clampsWhenAppsExceedUsed() {
+        val s = snapshot(totalStorage = 100 * gb, freeStorage = 90 * gb) // занято 10
+        val apps = listOf(app("a").copy(size = AppSize(50 * gb, 50 * gb, 20 * gb)))
+        val b = storageBreakdown(s, apps)!!
+        assertEquals(10 * gb, b.cacheBytes)
+        assertEquals(0L, b.appsBytes)
+        assertEquals(0L, b.otherBytes)
+        assertEquals(100 * gb, b.appsBytes + b.cacheBytes + b.otherBytes + b.freeBytes)
+    }
+
+    @Test fun storageBreakdown_nullWithoutSizesOrTotal() {
+        assertNull(storageBreakdown(snapshot(), listOf(app("a"))))
+        assertNull(storageBreakdown(snapshot(totalStorage = 0, freeStorage = 0), listOf(app("a").copy(size = AppSize(1, 1, 1)))))
+    }
+
+    @Test fun overallLevel_ignoresInfo() {
+        assertEquals(Level.NORMAL, overallLevel(emptyList()))
+        assertEquals(Level.NORMAL, overallLevel(listOf(Recommendation(RecommendationType.UNUSED_APPS, Level.INFO, 3))))
+        assertEquals(Level.WARNING, overallLevel(listOf(
+            Recommendation(RecommendationType.UNUSED_APPS, Level.INFO), Recommendation(RecommendationType.RAM_LOW, Level.WARNING))))
+        assertEquals(Level.CRITICAL, overallLevel(listOf(
+            Recommendation(RecommendationType.RAM_LOW, Level.WARNING), Recommendation(RecommendationType.STORAGE_LOW, Level.CRITICAL))))
+    }
+
+    @Test fun recommendations_cacheNoticeOnlyWithAccessAndAboveThreshold() {
+        val big = CACHE_NOTICE_BYTES
+        assertTrue(buildRecommendations(snapshot(), true, 0, big - 1).isEmpty())
+        val r = buildRecommendations(snapshot(), true, 0, big)
+        assertEquals(listOf(RecommendationType.CACHE_LARGE), r.map { it.type })
+        assertEquals(big, r[0].bytes)
+        assertEquals(listOf(RecommendationType.USAGE_ACCESS), buildRecommendations(snapshot(), false, 0, big).map { it.type })
     }
 
     @Test fun sort_idleOldestFirst() {

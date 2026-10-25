@@ -1,12 +1,21 @@
 package cloud.kvd.androidoptimizer.domain
 
-enum class RecommendationType { STORAGE_LOW, RAM_LOW, BATTERY_HOT, BATTERY_LOW, USAGE_ACCESS, UNUSED_APPS }
+enum class RecommendationType { STORAGE_LOW, RAM_LOW, BATTERY_HOT, BATTERY_LOW, USAGE_ACCESS, UNUSED_APPS, CACHE_LARGE }
 
 data class Recommendation(
     val type: RecommendationType,
     val level: Level,
-    val count: Int = 0
+    val count: Int = 0,
+    val bytes: Long = 0L
 )
+
+/** Кэш от этого объёма стоит показать пользователю. */
+const val CACHE_NOTICE_BYTES = 1L * 1024 * 1024 * 1024
+
+/** Общий статус: INFO-подсказки его не ухудшают, только предупреждения и критичные проблемы. */
+fun overallLevel(recommendations: List<Recommendation>): Level =
+    recommendations.map { it.level }.filter { it == Level.WARNING || it == Level.CRITICAL }
+        .maxByOrNull { it.ordinal } ?: Level.NORMAL
 
 fun storageLevel(s: DeviceSnapshot): Level {
     if (s.totalStorageBytes <= 0L) return Level.NORMAL
@@ -49,7 +58,8 @@ fun batteryChargeLevel(b: BatteryState): Level {
 fun buildRecommendations(
     snapshot: DeviceSnapshot,
     usageAccessGranted: Boolean,
-    idleAppsCount: Int
+    idleAppsCount: Int,
+    cacheBytes: Long = 0L
 ): List<Recommendation> {
     val result = mutableListOf<Recommendation>()
 
@@ -66,6 +76,9 @@ fun buildRecommendations(
         result += Recommendation(RecommendationType.USAGE_ACCESS, Level.INFO)
     } else if (idleAppsCount > 0) {
         result += Recommendation(RecommendationType.UNUSED_APPS, Level.INFO, idleAppsCount)
+    }
+    if (usageAccessGranted && cacheBytes >= CACHE_NOTICE_BYTES) {
+        result += Recommendation(RecommendationType.CACHE_LARGE, Level.INFO, bytes = cacheBytes)
     }
 
     // sortedByDescending стабилен: внутри одного уровня порядок правил сохраняется.

@@ -50,6 +50,11 @@ const val DAY_MS = 86_400_000L
 /** Приложение без запусков дольше этого срока считается неиспользуемым. Синхронизировано со строками reco_idle_*. */
 const val IDLE_THRESHOLD_DAYS = 60
 
+/** Размер приложения по данным системы (StorageStatsManager). */
+data class AppSize(val appBytes: Long, val dataBytes: Long, val cacheBytes: Long) {
+    val totalBytes: Long get() = appBytes + dataBytes + cacheBytes
+}
+
 data class AppEntry(
     val packageName: String,
     val label: String,
@@ -57,7 +62,12 @@ data class AppEntry(
     val installedAtMs: Long,
     /** null — система не знает о запусках за период наблюдения. */
     val lastUsedMs: Long?,
-    val foregroundMs7d: Long
+    val foregroundMs7d: Long,
+    /** Есть ли у пакета значок запуска. У служебных системных пакетов (сервисы, WebView) его нет. */
+    val hasLauncher: Boolean = true,
+    val isEnabled: Boolean = true,
+    /** null — размер неизвестен (нет доступа к статистике или ещё считается). */
+    val size: AppSize? = null
 )
 
 /** Сколько полных суток приложение не использовалось (если запусков нет — со дня установки). */
@@ -66,15 +76,23 @@ fun AppEntry.idleDays(nowMs: Long): Long {
     return (nowMs - reference).coerceAtLeast(0L) / DAY_MS
 }
 
+/** «Давно не используется» осмысленно только для включённых пользовательских приложений со значком запуска. */
 fun AppEntry.isIdle(nowMs: Long, thresholdDays: Int = IDLE_THRESHOLD_DAYS): Boolean =
-    !isSystem && idleDays(nowMs) >= thresholdDays
+    !isSystem && hasLauncher && isEnabled && idleDays(nowMs) >= thresholdDays
 
-enum class AppSort { IDLE, SCREEN_TIME, NAME }
+enum class AppSort { IDLE, SCREEN_TIME, SIZE, NAME }
 
-fun filterApps(apps: List<AppEntry>, query: String, includeSystem: Boolean): List<AppEntry> {
+enum class AppScope { USER, SYSTEM, ALL }
+
+fun filterApps(apps: List<AppEntry>, query: String, scope: AppScope): List<AppEntry> {
     val q = query.trim()
     return apps.filter { app ->
-        (includeSystem || !app.isSystem) &&
+        val inScope = when (scope) {
+            AppScope.USER -> !app.isSystem
+            AppScope.SYSTEM -> app.isSystem
+            AppScope.ALL -> true
+        }
+        inScope &&
             (q.isEmpty() || app.label.contains(q, ignoreCase = true) || app.packageName.contains(q, ignoreCase = true))
     }
 }
@@ -88,7 +106,41 @@ fun List<AppEntry>.sortedFor(sort: AppSort): List<AppEntry> = when (sort) {
         compareByDescending<AppEntry> { it.foregroundMs7d }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label }
     )
+    AppSort.SIZE -> sortedWith(
+        compareByDescending<AppEntry> { it.size?.totalBytes ?: -1L }
+            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label }
+    )
     AppSort.NAME -> sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
+}
+
+/** Самые крупные приложения; по умолчанию без системных — их всё равно не удалить. */
+fun topBySize(apps: List<AppEntry>, count: Int, includeSystem: Boolean = false): List<AppEntry> =
+    apps.filter { it.size != null && (includeSystem || !it.isSystem) }
+        .sortedByDescending { it.size?.totalBytes ?: 0L }
+        .take(count)
+
+/** Из чего состоит занятое место. Части не пересекаются, сумма равна общему объёму. */
+data class StorageBreakdown(
+    val appsBytes: Long,
+    val cacheBytes: Long,
+    val otherBytes: Long,
+    val freeBytes: Long,
+    val totalBytes: Long
+)
+
+/**
+ * Приложения и кэш — по данным StorageStatsManager, «прочее» — остаток занятого места
+ * (система, фото, загрузки). Если приложения «весят» больше занятого (общие файлы), значения ужимаются.
+ */
+fun storageBreakdown(snapshot: DeviceSnapshot, apps: List<AppEntry>): StorageBreakdown? {
+    val sizes = apps.mapNotNull { it.size }
+    val total = snapshot.totalStorageBytes
+    if (sizes.isEmpty() || total <= 0L) return null
+    val free = snapshot.freeStorageBytes.coerceIn(0L, total)
+    val used = total - free
+    val cache = sizes.sumOf { it.cacheBytes }.coerceAtMost(used)
+    val appsBytes = sizes.sumOf { it.appBytes + it.dataBytes }.coerceAtMost(used - cache)
+    return StorageBreakdown(appsBytes, cache, used - cache - appsBytes, free, total)
 }
 
 /** Разбор длительности на часы и минуты. */

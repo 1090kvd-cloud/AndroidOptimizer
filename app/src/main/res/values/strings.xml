@@ -8,15 +8,11 @@
 
     <string name="device_android">Android %1$s (API %2$d)</string>
 
-    <string name="metric_ram">Memory (RAM)</string>
     <string name="metric_storage">Storage</string>
     <string name="metric_battery">Battery</string>
-    <string name="metric_used_percent">%1$d%% used</string>
-    <string name="metric_free_of">%1$s free of %2$s</string>
     <string name="battery_unknown">Unknown</string>
     <string name="battery_charging">Charging</string>
     <string name="battery_discharging">On battery</string>
-    <string name="battery_temperature">Temperature %1$s °C</string>
 
     <string name="section_recommendations">Recommendations</string>
     <string name="reco_none_title">All good</string>
@@ -60,7 +56,6 @@
     <string name="sort_idle">Unused longest</string>
     <string name="sort_screen_time">Screen time</string>
     <string name="sort_name">By name</string>
-    <string name="filter_system">System apps</string>
     <string name="apps_usage_banner_title">Usage Access is off</string>
     <string name="apps_usage_banner_body">Without it the app cannot show last use or screen time. Sorting by name only.</string>
     <string name="action_grant">Grant access</string>
@@ -108,4 +103,31 @@
     <string name="toast_profile_failed">Couldn\'t change settings. Check the permission.</string>
     <string name="toast_reverted">Settings restored</string>
     <string name="toast_revert_failed">Couldn\'t undo this change</string>
+    <string name="hero_ok">All good</string>
+    <string name="hero_issues">Issues: %1$d</string>
+    <string name="gauge_ram">RAM</string>
+    <string name="gauge_free">%1$s free</string>
+    <string name="temperature_short">%1$s °C</string>
+    <string name="storage_used_of">%1$s used of %2$s</string>
+    <string name="legend_apps">Apps</string>
+    <string name="legend_cache">Cache</string>
+    <string name="legend_other">Other (system, files)</string>
+    <string name="legend_free">Free</string>
+    <string name="storage_calculating">Calculating app sizes…</string>
+    <string name="storage_need_access">Grant Usage Access to see what takes up space.</string>
+    <string name="section_top_apps">Biggest apps</string>
+    <string name="action_see_all">See all</string>
+    <string name="reco_cache_title">App cache takes %1$s</string>
+    <string name="reco_cache_body">Cache holds temporary data and is rebuilt automatically. Android lets you clear it per app in system storage settings.</string>
+    <string name="reco_cache_action">Open storage</string>
+    <string name="scope_user">User</string>
+    <string name="scope_system">System</string>
+    <string name="scope_all">All</string>
+    <string name="sort_size">By size</string>
+    <string name="badge_system">System</string>
+    <string name="badge_disabled">Disabled</string>
+    <string name="badge_no_launcher">Service</string>
+    <string name="badge_idle">Unused</string>
+    <string name="apps_summary">Apps: %1$d</string>
+    <string name="apps_summary_size">Apps: %1$d · %2$s</string>
 </resources>

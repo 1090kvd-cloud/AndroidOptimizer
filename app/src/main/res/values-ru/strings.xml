@@ -8,15 +8,11 @@
 
     <string name="device_android">Android %1$s (API %2$d)</string>
 
-    <string name="metric_ram">Оперативная память</string>
     <string name="metric_storage">Хранилище</string>
     <string name="metric_battery">Батарея</string>
-    <string name="metric_used_percent">Занято %1$d%%</string>
-    <string name="metric_free_of">Свободно %1$s из %2$s</string>
     <string name="battery_unknown">Неизвестно</string>
     <string name="battery_charging">Заряжается</string>
     <string name="battery_discharging">Работает от батареи</string>
-    <string name="battery_temperature">Температура %1$s °C</string>
 
     <string name="section_recommendations">Рекомендации</string>
     <string name="reco_none_title">Всё в порядке</string>
@@ -62,7 +58,6 @@
     <string name="sort_idle">Давно не использовались</string>
     <string name="sort_screen_time">Экранное время</string>
     <string name="sort_name">По имени</string>
-    <string name="filter_system">Системные</string>
     <string name="apps_usage_banner_title">Нет доступа к статистике</string>
     <string name="apps_usage_banner_body">Без него нельзя показать последний запуск и экранное время. Доступна только сортировка по имени.</string>
     <string name="action_grant">Выдать доступ</string>
@@ -112,4 +107,31 @@
     <string name="toast_profile_failed">Не удалось изменить настройки. Проверьте разрешение.</string>
     <string name="toast_reverted">Настройки возвращены</string>
     <string name="toast_revert_failed">Не удалось отменить изменение</string>
+    <string name="hero_ok">Всё в порядке</string>
+    <string name="hero_issues">Замечаний: %1$d</string>
+    <string name="gauge_ram">ОЗУ</string>
+    <string name="gauge_free">Свободно %1$s</string>
+    <string name="temperature_short">%1$s °C</string>
+    <string name="storage_used_of">Занято %1$s из %2$s</string>
+    <string name="legend_apps">Приложения</string>
+    <string name="legend_cache">Кэш</string>
+    <string name="legend_other">Прочее (система, файлы)</string>
+    <string name="legend_free">Свободно</string>
+    <string name="storage_calculating">Считаю размеры приложений…</string>
+    <string name="storage_need_access">Выдайте доступ к статистике, чтобы увидеть, что занимает место.</string>
+    <string name="section_top_apps">Больше всего места</string>
+    <string name="action_see_all">Показать все</string>
+    <string name="reco_cache_title">Кэш приложений занимает %1$s</string>
+    <string name="reco_cache_body">В кэше лежат временные данные, он восстанавливается автоматически. Очистить его можно по каждому приложению в системных настройках хранилища.</string>
+    <string name="reco_cache_action">Открыть хранилище</string>
+    <string name="scope_user">Пользовательские</string>
+    <string name="scope_system">Системные</string>
+    <string name="scope_all">Все</string>
+    <string name="sort_size">По размеру</string>
+    <string name="badge_system">Системное</string>
+    <string name="badge_disabled">Отключено</string>
+    <string name="badge_no_launcher">Служебное</string>
+    <string name="badge_idle">Не используется</string>
+    <string name="apps_summary">Приложений: %1$d</string>
+    <string name="apps_summary_size">Приложений: %1$d · %2$s</string>
 </resources>
