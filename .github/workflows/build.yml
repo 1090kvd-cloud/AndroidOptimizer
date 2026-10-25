@@ -30,8 +30,25 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
       - name: Lint
-        run: ./gradlew lintDebug
+        id: lint
+        shell: bash
+        run: ./gradlew lintDebug --console=plain 2>&1 | tee lint.log
         continue-on-error: true
+      - name: Report lint findings
+        if: steps.lint.outcome == 'failure'
+        shell: bash
+        run: |
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          report=app/build/reports/lint-results-debug.txt
+          if [ -f "$report" ]; then
+            findings=$(grep -E ': (Error|Fatal)' -A2 "$report" | head -60 | enc)
+            summary=$(tail -5 "$report" | enc)
+          else
+            findings=$(grep -E 'Lint found|Error:|What went wrong' -A3 lint.log | head -40 | enc)
+            summary=""
+          fi
+          echo "::error title=Lint errors::${findings}"
+          echo "::warning title=Lint summary::${summary}"
       - uses: actions/upload-artifact@v4
         with:
           name: AndroidOptimizer-debug
